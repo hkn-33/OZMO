@@ -95,7 +95,7 @@ watch(open, (v) => {
           </div>
           <span
             class="shrink-0 font-semibold tabular-nums"
-            :class="Number(m.qty_delta) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'"
+            :class="Number(m.qty_delta) > 0 ? 'text-success' : 'text-destructive'"
           >
             {{ Number(m.qty_delta) > 0 ? '+' : '' }}{{ m.qty_delta }} {{ unit }}
           </span>

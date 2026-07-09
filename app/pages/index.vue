@@ -278,7 +278,7 @@ const dueLabel = (iso: string | null) => (iso ? formatDateTime(iso) : 'bez termi
           </CardHeader>
           <CardContent>
             <p v-if="!dash?.myTasks.length" class="py-4 text-center text-sm text-muted-foreground">
-              Brak przypisanych zadań. 🎉
+              Nie masz przypisanych zadań.
             </p>
             <ul v-else class="space-y-1.5">
               <NuxtLink

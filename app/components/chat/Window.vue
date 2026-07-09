@@ -151,7 +151,29 @@ async function subscribe() {
     .on('broadcast', { event: 'typing' }, (msg) => {
       onTyping(msg.payload as { id: string; name: string })
     })
-  channel.subscribe()
+  channel.subscribe(async (status) => {
+    // Dociągnij wiadomości, które wpadły między loadInitial a dołączeniem do kanału —
+    // bez tego wiadomość wysłana w tym oknie czasu pojawia się dopiero po odświeżeniu.
+    if (status !== 'SUBSCRIBED') return
+    const latest = messages.value[messages.value.length - 1]?.created_at
+    let q = supabase
+      .from('chat_messages')
+      .select('id, author_id, body, created_at, attachments')
+      .eq('channel_id', props.channel.id)
+      .order('created_at', { ascending: true })
+      .limit(PAGE)
+    if (latest) q = q.gt('created_at', latest)
+    const { data } = await q
+    const fresh = ((data ?? []) as unknown as Message[]).filter(
+      (r) => !messages.value.some((m) => m.id === r.id),
+    )
+    if (fresh.length) {
+      await resolveNames(fresh.map((m) => m.author_id))
+      messages.value.push(...fresh)
+      scrollToBottom(true)
+      markRead()
+    }
+  })
 }
 
 function teardown() {
@@ -214,11 +236,17 @@ function showDaySeparator(i: number) {
   if (i === 0) return true
   return dayKey(messages.value[i]!.created_at) !== dayKey(messages.value[i - 1]!.created_at)
 }
+const GROUP_GAP_MS = 5 * 60_000
 function showAuthor(i: number) {
   if (i === 0) return true
   const cur = messages.value[i]!
   const prev = messages.value[i - 1]!
-  return cur.author_id !== prev.author_id || showDaySeparator(i)
+  if (cur.author_id !== prev.author_id || showDaySeparator(i)) return true
+  // Nowy nagłówek po przerwie dłuższej niż 5 minut.
+  return new Date(cur.created_at).getTime() - new Date(prev.created_at).getTime() > GROUP_GAP_MS
+}
+function isMine(id: string) {
+  return id === myId()
 }
 
 watch(
@@ -252,15 +280,24 @@ onBeforeUnmount(teardown)
           <div class="h-px flex-1 bg-border" />
         </div>
 
-        <div class="flex gap-2" :class="showAuthor(i) ? 'mt-2' : 'mt-0.5'">
+        <div
+          class="group -mx-2 flex gap-2 rounded-md px-2 py-0.5 transition-colors hover:bg-muted/40"
+          :class="[showAuthor(i) ? 'mt-2' : 'mt-px', isMine(m.author_id) ? 'bg-primary/[0.035]' : '']"
+        >
           <div class="w-8 shrink-0">
             <Avatar v-if="showAuthor(i)" class="size-8">
               <AvatarFallback class="text-xs">{{ initialOf(m.author_id) }}</AvatarFallback>
             </Avatar>
+            <span
+              v-else
+              class="mt-0.5 hidden text-right text-[10px] leading-4 text-muted-foreground/70 group-hover:block"
+            >
+              {{ timeLabel(m.created_at) }}
+            </span>
           </div>
           <div class="min-w-0 flex-1">
             <div v-if="showAuthor(i)" class="flex items-baseline gap-2">
-              <span class="text-sm font-medium">{{ nameOf(m.author_id) }}</span>
+              <span class="text-sm font-medium">{{ isMine(m.author_id) ? 'Ty' : nameOf(m.author_id) }}</span>
               <span class="text-[11px] text-muted-foreground">{{ timeLabel(m.created_at) }}</span>
             </div>
             <p v-if="m.body" class="whitespace-pre-wrap break-words text-sm">{{ m.body }}</p>

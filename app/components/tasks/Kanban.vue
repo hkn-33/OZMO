@@ -44,6 +44,9 @@ function columnTasks(status: TaskStatus) {
 function doneCount(t: TaskRow) {
   return t.task_checklist_items.filter((i) => i.done).length
 }
+function isOverdue(t: TaskRow) {
+  return !!t.due_at && t.status !== 'done' && new Date(t.due_at).getTime() < Date.now()
+}
 
 const draggingId = ref<string | null>(null)
 const overColumn = ref<TaskStatus | null>(null)
@@ -106,7 +109,10 @@ async function onDrop(status: TaskStatus) {
             <Badge :variant="priorityVariant[t.priority]" class="text-[10px]">
               {{ priorityLabels[t.priority] }}
             </Badge>
-            <span v-if="t.due_at" class="flex items-center gap-1">
+            <Badge v-if="t.due_at && isOverdue(t)" variant="warning" class="gap-1 text-[10px]">
+              <CalendarClock class="size-3" /> {{ formatDateTime(t.due_at) }}
+            </Badge>
+            <span v-else-if="t.due_at" class="flex items-center gap-1">
               <CalendarClock class="size-3" /> {{ formatDateTime(t.due_at) }}
             </span>
             <span v-if="t.task_checklist_items.length" class="flex items-center gap-1">

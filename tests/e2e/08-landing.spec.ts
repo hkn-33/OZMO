@@ -19,6 +19,6 @@ test('landing page renders for anonymous visitors with pricing', async ({ page }
 
   // CTA to register.
   await expect(
-    page.getByRole('link', { name: /Zacznij za darmo|Załóż konto/ }).first(),
+    page.getByRole('link', { name: /Wypróbuj za darmo/ }).first(),
   ).toBeVisible()
 })

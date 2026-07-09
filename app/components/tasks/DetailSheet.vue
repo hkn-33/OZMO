@@ -336,6 +336,7 @@ async function removeAssignee(userId: string) {
 async function deleteTask() {
   if (!task.value) return
   if (blockDemo()) return
+  if (!confirm(`Usunąć zadanie „${task.value.title}"? Tej operacji nie można cofnąć.`)) return
   const { error } = await supabase.from('tasks').delete().eq('id', task.value.id)
   if (error) {
     toast.error('Nie udało się usunąć zadania', { description: error.message })

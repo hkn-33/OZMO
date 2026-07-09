@@ -234,7 +234,7 @@ async function submitAll() {
           <div class="flex items-center gap-2">
             <span
               class="font-semibold tabular-nums"
-              :class="l.qtyDelta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'"
+              :class="l.qtyDelta > 0 ? 'text-success' : 'text-destructive'"
             >
               {{ l.qtyDelta > 0 ? '+' : '' }}{{ l.qtyDelta }} {{ l.unit }}
             </span>

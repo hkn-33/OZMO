@@ -327,7 +327,7 @@ async function confirmClose() {
                 <TableCell class="text-right tabular-nums">
                   <span
                     v-if="it.counted_qty != null && Number(it.counted_qty) !== Number(it.expected_qty)"
-                    :class="Number(it.counted_qty) - Number(it.expected_qty) < 0 ? 'text-destructive' : 'text-success-foreground'"
+                    :class="Number(it.counted_qty) - Number(it.expected_qty) < 0 ? 'text-destructive' : 'text-success'"
                   >
                     {{ Number(it.counted_qty) - Number(it.expected_qty) > 0 ? '+' : '' }}{{ fmt(Number(it.counted_qty) - Number(it.expected_qty)) }}
                   </span>
@@ -416,7 +416,7 @@ async function confirmClose() {
                 <TableCell class="text-right tabular-nums">{{ fmt(d.counted) }}</TableCell>
                 <TableCell
                   class="text-right tabular-nums"
-                  :class="d.delta < 0 ? 'text-destructive' : 'text-success-foreground'"
+                  :class="d.delta < 0 ? 'text-destructive' : 'text-success'"
                 >
                   {{ d.delta > 0 ? '+' : '' }}{{ fmt(d.delta) }}
                 </TableCell>

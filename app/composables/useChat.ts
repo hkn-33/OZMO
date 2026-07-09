@@ -21,13 +21,19 @@ export function useChat() {
   const user = useSupabaseUser()
   const { activeOrgId } = useOrg()
 
+  // Po twardym wejściu na stronę `user.value` to *claims* JWT (`.sub`, bez `.id`)
+  // zanim klient odświeży sesję. Bierzemy stabilny identyfikator z `.id` lub `.sub`.
+  const uid = computed(
+    () => user.value?.id ?? (user.value as { sub?: string } | null)?.sub ?? null,
+  )
+
   const channels = useState<ChatChannel[]>('chat.channels', () => [])
   const unreadMap = useState<Record<string, number>>('chat.unread', () => ({})) // channel_id -> count
   const loaded = useState<boolean>('chat.loaded', () => false)
 
   async function loadChannels(force = false) {
     if (loaded.value && !force) return
-    if (!activeOrgId.value || !user.value) {
+    if (!activeOrgId.value || !uid.value) {
       channels.value = []
       unreadMap.value = {}
       loaded.value = true
@@ -45,7 +51,7 @@ export function useChat() {
   }
 
   async function refreshUnread() {
-    if (!user.value) return
+    if (!uid.value) return
     const { data: reads } = await supabase
       .from('chat_reads')
       .select('channel_id, last_read_at')
@@ -57,7 +63,7 @@ export function useChat() {
           .from('chat_messages')
           .select('id', { count: 'exact', head: true })
           .eq('channel_id', ch.id)
-          .neq('author_id', user.value!.id)
+          .neq('author_id', uid.value)
         const last = readMap.get(ch.id)
         if (last) q = q.gt('created_at', last)
         const { count } = await q
@@ -68,10 +74,10 @@ export function useChat() {
   }
 
   async function markRead(channelId: string) {
-    if (!user.value) return
+    if (!uid.value) return
     await supabase
       .from('chat_reads')
-      .upsert({ channel_id: channelId, user_id: user.value.id, last_read_at: new Date().toISOString() })
+      .upsert({ channel_id: channelId, user_id: uid.value, last_read_at: new Date().toISOString() })
     unreadMap.value = { ...unreadMap.value, [channelId]: 0 }
   }
 

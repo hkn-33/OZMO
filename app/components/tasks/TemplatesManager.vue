@@ -78,6 +78,7 @@ async function save() {
 
 async function remove(t: ChecklistTemplate) {
   if (blockDemo()) return
+  if (!confirm(`Usunąć szablon „${t.name}"?`)) return
   const { error } = await supabase.from('checklist_templates').delete().eq('id', t.id)
   if (error) {
     toast.error('Nie udało się usunąć szablonu', { description: error.message })

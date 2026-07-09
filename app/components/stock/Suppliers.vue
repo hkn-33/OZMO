@@ -84,6 +84,7 @@ async function save() {
 
 async function remove(s: Supplier) {
   if (blockDemo()) return
+  if (!confirm(`Usunąć dostawcę „${s.name}"?`)) return
   const { error } = await supabase.from('suppliers').delete().eq('id', s.id)
   if (error) {
     toast.error('Nie udało się usunąć dostawcy', { description: error.message })

@@ -1,6 +1,8 @@
-/* Self-hosted variable fonts (no external CDN). Polish diacritics via latin-ext subset. */
-@import '@fontsource-variable/figtree/index.css';
-@import '@fontsource-variable/bricolage-grotesque/index.css';
+/* Self-hosted variable font (no external CDN). Single family: Inter Variable with
+   weight + optical-size (opsz) axes — opsz gives headings the "Inter Display" cut
+   automatically via font-optical-sizing. Polish diacritics via the latin-ext subset,
+   which the browser lazy-loads by unicode-range. */
+@import '@fontsource-variable/inter/opsz.css';
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -8,9 +10,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Typography — humanist body (Figtree) + characterful display grotesque (Bricolage) */
-  --font-sans: 'Figtree Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: 'Bricolage Grotesque Variable', 'Figtree Variable', ui-sans-serif, system-ui, sans-serif;
+  /* Typography — one family (Inter), weight + optical size carry the hierarchy */
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-heading);
   --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
 
@@ -53,7 +55,7 @@
   --color-destructive-soft: var(--destructive-soft);
   --color-destructive-soft-foreground: var(--destructive-soft-foreground);
 
-  /* Charts — coherent brand-anchored set */
+  /* Charts — cobalt-anchored, cool categorical set */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -70,147 +72,154 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* Radius — base 0.5rem: buttons/inputs 6px (md), cards 8-12px (lg/xl), badge pill */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
 
-  /* Warm-tinted elevation (no pure-black shadows) */
-  --shadow-2xs: 0 1px 2px 0 oklch(0.24 0.03 55 / 0.05);
-  --shadow-xs: 0 1px 2px 0 oklch(0.24 0.03 55 / 0.06);
-  --shadow-sm: 0 1px 2px 0 oklch(0.24 0.03 55 / 0.07), 0 1px 3px 0 oklch(0.24 0.03 55 / 0.06);
-  --shadow: 0 2px 4px -1px oklch(0.24 0.03 55 / 0.07), 0 1px 3px 0 oklch(0.24 0.03 55 / 0.06);
-  --shadow-md: 0 6px 14px -3px oklch(0.24 0.03 55 / 0.10), 0 2px 6px -2px oklch(0.24 0.03 55 / 0.07);
-  --shadow-lg: 0 14px 32px -8px oklch(0.24 0.03 55 / 0.14), 0 4px 12px -4px oklch(0.24 0.03 55 / 0.08);
-  --shadow-xl: 0 24px 48px -12px oklch(0.24 0.03 55 / 0.18), 0 8px 20px -8px oklch(0.24 0.03 55 / 0.10);
+  /* Elevation — no card shadows. Flat surfaces use hairline borders. Only floating
+     layers (dropdown / dialog / sheet / toast / raised segment) get a subtle,
+     cool-neutral shadow. --shadow-floating is the single lift token for overlays. */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 1px 2px 0 oklch(0.21 0.02 260 / 0.06);
+  --shadow: 0 1px 3px 0 oklch(0.21 0.02 260 / 0.08);
+  --shadow-md: 0 4px 12px -2px oklch(0.21 0.02 260 / 0.10), 0 2px 6px -2px oklch(0.21 0.02 260 / 0.06);
+  --shadow-lg: 0 12px 28px -6px oklch(0.21 0.02 260 / 0.14), 0 4px 10px -4px oklch(0.21 0.02 260 / 0.08);
+  --shadow-xl: 0 20px 40px -10px oklch(0.21 0.02 260 / 0.18), 0 6px 16px -6px oklch(0.21 0.02 260 / 0.10);
+  --shadow-floating: 0 8px 24px -6px oklch(0.21 0.02 260 / 0.12), 0 2px 6px -2px oklch(0.21 0.02 260 / 0.08);
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 
-  /* Canvas is a soft, barely-warm off-white; cards sit ABOVE it in pure white.
-     This surface split is what gives the UI its zone hierarchy. */
-  --background: oklch(0.977 0.004 75);
-  --foreground: oklch(0.245 0.013 55);
+  /* Slate & Cobalt — cool gray-50 canvas, pure-white surfaces, hairline borders.
+     Zone hierarchy comes from 1px borders, not fills or shadows. */
+  --background: oklch(0.985 0.002 247.8);
+  --foreground: oklch(0.21 0.034 264.7);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.245 0.013 55);
+  --card-foreground: oklch(0.21 0.034 264.7);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.245 0.013 55);
+  --popover-foreground: oklch(0.21 0.034 264.7);
 
-  --muted: oklch(0.955 0.006 75);
-  --muted-foreground: oklch(0.498 0.014 60);
+  --muted: oklch(0.967 0.004 258);
+  --muted-foreground: oklch(0.554 0.046 257.4);
 
-  --border: oklch(0.902 0.006 75);
-  --input: oklch(0.872 0.008 75);
-  --ring: oklch(0.6 0.132 45);
+  --border: oklch(0.928 0.006 264.5);
+  --input: oklch(0.905 0.007 262);
+  --ring: oklch(0.546 0.245 262.9);
 
-  /* Brand — warm terracotta/clay. Hospitality warmth, not SaaS purple.
-     L tuned to 0.56 so white-on-primary and primary-as-text both clear WCAG AA. */
-  --primary: oklch(0.56 0.14 44);
-  --primary-foreground: oklch(0.99 0.008 60);
+  /* Brand — cobalt (blue-600). The single accent; no second brand hue. */
+  --primary: oklch(0.546 0.245 262.9);
+  --primary-foreground: oklch(0.985 0.002 247.8);
 
-  --secondary: oklch(0.953 0.007 75);
-  --secondary-foreground: oklch(0.32 0.014 55);
-  --accent: oklch(0.947 0.013 55);
-  --accent-foreground: oklch(0.34 0.03 44);
+  --secondary: oklch(0.967 0.004 258);
+  --secondary-foreground: oklch(0.28 0.03 264);
+  --accent: oklch(0.958 0.006 258);
+  --accent-foreground: oklch(0.28 0.03 264);
 
-  --destructive: oklch(0.552 0.2 25.5);
-  --destructive-foreground: oklch(0.99 0.008 25);
+  --destructive: oklch(0.577 0.222 27);
+  --destructive-foreground: oklch(0.985 0.006 27);
 
-  /* State scale — solid (fills/dots) and soft (badge bg + readable fg) */
-  --success: oklch(0.585 0.12 152);
-  --success-foreground: oklch(0.99 0.01 152);
-  --success-soft: oklch(0.945 0.043 152);
-  --success-soft-foreground: oklch(0.435 0.098 152);
+  /* State scale — solid (fills/dots) and soft (badge bg + readable fg), cool-tuned */
+  --success: oklch(0.58 0.13 155);
+  --success-foreground: oklch(0.99 0.01 155);
+  --success-soft: oklch(0.95 0.04 158);
+  --success-soft-foreground: oklch(0.42 0.1 158);
 
-  --warning: oklch(0.72 0.132 74);
-  --warning-foreground: oklch(0.28 0.06 74);
-  --warning-soft: oklch(0.952 0.058 84);
-  --warning-soft-foreground: oklch(0.5 0.108 62);
+  --warning: oklch(0.72 0.15 70);
+  --warning-foreground: oklch(0.28 0.06 70);
+  --warning-soft: oklch(0.952 0.05 82);
+  --warning-soft-foreground: oklch(0.47 0.11 62);
 
-  --info: oklch(0.585 0.104 242);
-  --info-foreground: oklch(0.99 0.01 242);
-  --info-soft: oklch(0.95 0.036 242);
-  --info-soft-foreground: oklch(0.47 0.104 245);
+  --info: oklch(0.6 0.14 245);
+  --info-foreground: oklch(0.99 0.01 245);
+  --info-soft: oklch(0.95 0.04 245);
+  --info-soft-foreground: oklch(0.455 0.11 248);
 
-  --destructive-soft: oklch(0.952 0.042 25);
-  --destructive-soft-foreground: oklch(0.505 0.16 26);
+  --destructive-soft: oklch(0.95 0.035 25);
+  --destructive-soft-foreground: oklch(0.505 0.18 27);
 
-  --chart-1: oklch(0.62 0.145 44);
-  --chart-2: oklch(0.62 0.09 205);
-  --chart-3: oklch(0.74 0.13 74);
-  --chart-4: oklch(0.585 0.12 152);
-  --chart-5: oklch(0.56 0.09 262);
+  --chart-1: oklch(0.546 0.245 262.9);
+  --chart-2: oklch(0.62 0.12 235);
+  --chart-3: oklch(0.6 0.13 155);
+  --chart-4: oklch(0.65 0.15 70);
+  --chart-5: oklch(0.55 0.16 300);
 
-  --sidebar: oklch(0.966 0.006 75);
-  --sidebar-foreground: oklch(0.36 0.012 55);
-  --sidebar-primary: oklch(0.56 0.14 44);
-  --sidebar-primary-foreground: oklch(0.99 0.008 60);
-  --sidebar-accent: oklch(0.933 0.014 55);
-  --sidebar-accent-foreground: oklch(0.34 0.03 44);
-  --sidebar-border: oklch(0.9 0.006 75);
-  --sidebar-ring: oklch(0.6 0.132 45);
+  /* Sidebar shares the canvas tone; a hairline right border does the separating. */
+  --sidebar: oklch(0.985 0.002 247.8);
+  --sidebar-foreground: oklch(0.37 0.02 264);
+  --sidebar-primary: oklch(0.546 0.245 262.9);
+  --sidebar-primary-foreground: oklch(0.985 0.002 247.8);
+  --sidebar-accent: oklch(0.955 0.006 258);
+  --sidebar-accent-foreground: oklch(0.28 0.03 264);
+  --sidebar-border: oklch(0.928 0.006 264.5);
+  --sidebar-ring: oklch(0.546 0.245 262.9);
 }
 
 .dark {
-  --background: oklch(0.188 0.006 70);
-  --foreground: oklch(0.955 0.004 75);
-  --card: oklch(0.228 0.007 70);
-  --card-foreground: oklch(0.955 0.004 75);
-  --popover: oklch(0.238 0.007 70);
-  --popover-foreground: oklch(0.955 0.004 75);
+  /* Never pure black — cool near-slate canvas, card lifts one step, hairline borders. */
+  --background: oklch(0.2 0.02 260);
+  --foreground: oklch(0.96 0.004 258);
+  --card: oklch(0.23 0.02 260);
+  --card-foreground: oklch(0.96 0.004 258);
+  --popover: oklch(0.245 0.02 260);
+  --popover-foreground: oklch(0.96 0.004 258);
 
-  --muted: oklch(0.262 0.008 70);
-  --muted-foreground: oklch(0.712 0.011 72);
+  --muted: oklch(0.27 0.018 260);
+  --muted-foreground: oklch(0.71 0.03 258);
 
-  --border: oklch(0.312 0.008 70);
-  --input: oklch(0.362 0.009 70);
-  --ring: oklch(0.66 0.135 46);
+  --border: oklch(0.3 0.02 260);
+  --input: oklch(0.36 0.018 260);
+  --ring: oklch(0.62 0.2 262);
 
-  --primary: oklch(0.66 0.138 46);
-  --primary-foreground: oklch(0.16 0.02 44);
+  /* L tuned to 0.57 so white-on-primary (the primary CTA) clears WCAG AA 4.5:1;
+     cobalt-as-accent-text on the dark canvas lands at AA-large (~3.9). */
+  --primary: oklch(0.57 0.21 262);
+  --primary-foreground: oklch(0.99 0.01 262);
 
-  --secondary: oklch(0.272 0.008 70);
-  --secondary-foreground: oklch(0.93 0.006 72);
-  --accent: oklch(0.298 0.014 48);
-  --accent-foreground: oklch(0.94 0.02 60);
+  --secondary: oklch(0.28 0.018 260);
+  --secondary-foreground: oklch(0.93 0.006 258);
+  --accent: oklch(0.3 0.02 260);
+  --accent-foreground: oklch(0.95 0.006 258);
 
-  --destructive: oklch(0.62 0.19 25);
-  --destructive-foreground: oklch(0.98 0.01 25);
+  --destructive: oklch(0.63 0.2 26);
+  --destructive-foreground: oklch(0.98 0.01 26);
 
-  --success: oklch(0.66 0.12 152);
-  --success-foreground: oklch(0.16 0.03 152);
-  --success-soft: oklch(0.32 0.058 152);
-  --success-soft-foreground: oklch(0.84 0.1 152);
+  --success: oklch(0.68 0.13 158);
+  --success-foreground: oklch(0.18 0.03 158);
+  --success-soft: oklch(0.32 0.06 158);
+  --success-soft-foreground: oklch(0.82 0.12 158);
 
-  --warning: oklch(0.75 0.13 74);
-  --warning-foreground: oklch(0.2 0.05 74);
+  --warning: oklch(0.76 0.14 72);
+  --warning-foreground: oklch(0.2 0.05 72);
   --warning-soft: oklch(0.35 0.06 70);
-  --warning-soft-foreground: oklch(0.85 0.11 82);
+  --warning-soft-foreground: oklch(0.85 0.12 80);
 
-  --info: oklch(0.66 0.1 242);
-  --info-foreground: oklch(0.16 0.03 242);
-  --info-soft: oklch(0.32 0.05 245);
-  --info-soft-foreground: oklch(0.82 0.09 242);
+  --info: oklch(0.66 0.14 245);
+  --info-foreground: oklch(0.16 0.03 245);
+  --info-soft: oklch(0.32 0.06 245);
+  --info-soft-foreground: oklch(0.82 0.1 245);
 
-  --destructive-soft: oklch(0.33 0.07 26);
-  --destructive-soft-foreground: oklch(0.82 0.11 26);
+  --destructive-soft: oklch(0.33 0.08 26);
+  --destructive-soft-foreground: oklch(0.83 0.12 26);
 
-  --chart-1: oklch(0.68 0.145 46);
-  --chart-2: oklch(0.68 0.09 205);
-  --chart-3: oklch(0.78 0.13 78);
-  --chart-4: oklch(0.68 0.12 152);
-  --chart-5: oklch(0.66 0.1 262);
+  --chart-1: oklch(0.62 0.21 262);
+  --chart-2: oklch(0.68 0.12 235);
+  --chart-3: oklch(0.68 0.13 158);
+  --chart-4: oklch(0.72 0.14 72);
+  --chart-5: oklch(0.64 0.16 300);
 
-  --sidebar: oklch(0.162 0.006 70);
-  --sidebar-foreground: oklch(0.78 0.008 72);
-  --sidebar-primary: oklch(0.66 0.138 46);
-  --sidebar-primary-foreground: oklch(0.16 0.02 44);
-  --sidebar-accent: oklch(0.288 0.014 48);
-  --sidebar-accent-foreground: oklch(0.94 0.02 60);
-  --sidebar-border: oklch(0.28 0.008 70);
-  --sidebar-ring: oklch(0.66 0.135 46);
+  --sidebar: oklch(0.2 0.02 260);
+  --sidebar-foreground: oklch(0.72 0.02 258);
+  --sidebar-primary: oklch(0.57 0.21 262);
+  --sidebar-primary-foreground: oklch(0.99 0.01 262);
+  --sidebar-accent: oklch(0.28 0.02 260);
+  --sidebar-accent-foreground: oklch(0.95 0.006 258);
+  --sidebar-border: oklch(0.3 0.02 260);
+  --sidebar-ring: oklch(0.62 0.2 262);
 }
 
 @layer base {
@@ -229,13 +238,15 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    font-feature-settings: 'cv11', 'ss01';
+    font-feature-settings: 'cv11';
   }
 
-  /* Display face for real title hierarchy */
+  /* Headings — same family, heavier weight + tighter tracking; opsz auto-applies
+     the Display cut at large sizes. */
   h1, h2, h3, h4 {
     font-family: var(--font-heading);
-    letter-spacing: -0.015em;
+    font-weight: 600;
+    letter-spacing: -0.02em;
     text-wrap: balance;
   }
 
@@ -246,7 +257,7 @@
   }
 
   ::selection {
-    background: oklch(0.56 0.14 44 / 0.18);
+    background: oklch(0.546 0.245 262.9 / 0.18);
   }
 
   @media (prefers-reduced-motion: reduce) {

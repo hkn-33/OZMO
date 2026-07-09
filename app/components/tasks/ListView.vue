@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarClock, ListChecks, MessageSquare } from '@lucide/vue'
+import { CalendarClock, ListChecks, Plus } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 import { formatDateTime } from '~/lib/utils'
 import type { TaskMember } from '~/components/tasks/NewDialog.vue'
@@ -19,7 +19,7 @@ export interface TaskRow {
 }
 
 const props = defineProps<{ tasks: TaskRow[]; members: TaskMember[] }>()
-const emit = defineEmits<{ open: [id: string] }>()
+const emit = defineEmits<{ open: [id: string]; create: [] }>()
 
 const statusLabels: Record<TaskStatus, string> = {
   todo: 'Do zrobienia',
@@ -72,6 +72,14 @@ const filtered = computed(() => {
 function doneCount(t: TaskRow) {
   return t.task_checklist_items.filter((i) => i.done).length
 }
+function isOverdue(t: TaskRow) {
+  return !!t.due_at && t.status !== 'done' && new Date(t.due_at).getTime() < Date.now()
+}
+function resetFilters() {
+  filters.status = 'all'
+  filters.priority = 'all'
+  filters.assignee = 'all'
+}
 </script>
 
 <template>
@@ -103,12 +111,26 @@ function doneCount(t: TaskRow) {
       </Select>
     </div>
 
-    <p
+    <div
       v-if="!filtered.length"
-      class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground"
+      class="rounded-lg border border-dashed p-8 text-center"
     >
-      Brak zadań.
-    </p>
+      <template v-if="!tasks.length">
+        <p class="text-sm font-medium">Brak zadań w tym oddziale</p>
+        <p class="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+          Dodaj pierwsze zadanie, aby zacząć organizować pracę zespołu.
+        </p>
+        <Button size="sm" class="mt-4" @click="emit('create')">
+          <Plus class="mr-1.5 size-4" /> Dodaj zadanie
+        </Button>
+      </template>
+      <template v-else>
+        <p class="text-sm text-muted-foreground">Brak zadań pasujących do filtrów.</p>
+        <Button variant="outline" size="sm" class="mt-3" @click="resetFilters">
+          Wyczyść filtry
+        </Button>
+      </template>
+    </div>
 
     <div v-else class="space-y-2">
       <button
@@ -128,7 +150,10 @@ function doneCount(t: TaskRow) {
               {{ priorityLabels[t.priority] }}
             </Badge>
             <Badge :variant="statusVariant[t.status]" class="text-[10px]">{{ statusLabels[t.status] }}</Badge>
-            <span v-if="t.due_at" class="flex items-center gap-1">
+            <Badge v-if="t.due_at && isOverdue(t)" variant="warning" class="gap-1 text-[10px]">
+              <CalendarClock class="size-3" /> {{ formatDateTime(t.due_at) }}
+            </Badge>
+            <span v-else-if="t.due_at" class="flex items-center gap-1">
               <CalendarClock class="size-3" /> {{ formatDateTime(t.due_at) }}
             </span>
             <span v-if="t.task_checklist_items.length" class="flex items-center gap-1">

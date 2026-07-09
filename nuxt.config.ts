@@ -25,8 +25,8 @@ export default defineNuxtConfig({
       description:
         'System operacyjny dla sieci lokali: zadania, grafik, magazyn, raporty i czaty w jednym miejscu.',
       lang: 'pl',
-      theme_color: '#b55424',
-      background_color: '#f9f7f4',
+      theme_color: '#155dfc',
+      background_color: '#f8fafc',
       display: 'standalone',
       start_url: '/',
       scope: '/',

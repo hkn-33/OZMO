@@ -108,7 +108,12 @@ watch(detailOpen, (v) => {
 
       <template v-else>
         <TabsContent value="list">
-          <TasksListView :tasks="data!.tasks" :members="data!.members" @open="openTask" />
+          <TasksListView
+            :tasks="data!.tasks"
+            :members="data!.members"
+            @open="openTask"
+            @create="guard(() => (newOpen = true))"
+          />
         </TabsContent>
         <TabsContent value="kanban">
           <TasksKanban

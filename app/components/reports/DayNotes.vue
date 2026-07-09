@@ -139,6 +139,7 @@ async function saveEdit(n: Note) {
 }
 async function remove(n: Note) {
   if (blockDemo()) return
+  if (!confirm('Usunąć ten wpis?')) return
   const { error } = await supabase.from('day_notes').delete().eq('id', n.id)
   if (error) {
     toast.error('Nie udało się usunąć', { description: error.message })

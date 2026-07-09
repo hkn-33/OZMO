@@ -171,6 +171,7 @@ async function changeOrgRole(m: Member, role: OrgRole) {
 
 async function removeFromOrg(m: Member) {
   if (blockDemo()) return
+  if (!confirm(`Usunąć ${memberName(m)} z organizacji? Utraci dostęp do wszystkich oddziałów.`)) return
   const { error } = await supabase
     .from('org_members')
     .delete()
@@ -186,6 +187,7 @@ async function removeFromOrg(m: Member) {
 
 async function removeFromBranch(a: BranchAssignment) {
   if (blockDemo()) return
+  if (!confirm(`Odpiąć od oddziału „${a.branches?.name ?? ''}"?`)) return
   const { error } = await supabase
     .from('branch_members')
     .delete()
