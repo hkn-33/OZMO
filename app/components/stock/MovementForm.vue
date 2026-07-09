@@ -9,6 +9,7 @@ const props = defineProps<{ orgId: string; branchId: string }>()
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
+const { isDemo, upgradeOpen } = useDemoGuard()
 
 const typeLabel: Record<MovementType, string> = {
   delivery: 'Dostawa',
@@ -103,6 +104,10 @@ function removeLine(i: number) {
 const saving = ref(false)
 async function submitAll() {
   if (!lines.value.length || !user.value) return
+  if (isDemo.value) {
+    upgradeOpen.value = true
+    return
+  }
   saving.value = true
   const rows = lines.value.map((l) => ({
     org_id: props.orgId,

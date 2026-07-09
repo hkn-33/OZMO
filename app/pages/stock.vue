@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Boxes, ArrowLeftRight, PackageSearch, Truck } from '@lucide/vue'
+import { Boxes, ArrowLeftRight, PackageSearch, Truck, Network } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 
 type BranchRole = Database['public']['Enums']['branch_role']
@@ -29,7 +29,7 @@ const { data: role } = await useAsyncData(
 )
 
 const canManage = computed(() => isAdmin.value || role.value === 'manager')
-const tab = ref<'levels' | 'movements' | 'products' | 'suppliers'>('levels')
+const tab = ref<'levels' | 'network' | 'movements' | 'products' | 'suppliers'>('levels')
 </script>
 
 <template>
@@ -50,6 +50,9 @@ const tab = ref<'levels' | 'movements' | 'products' | 'suppliers'>('levels')
     <Tabs v-else v-model="tab">
       <TabsList class="flex-wrap">
         <TabsTrigger value="levels"><Boxes class="mr-1.5 size-4" /> Stany</TabsTrigger>
+        <TabsTrigger v-if="isAdmin" value="network">
+          <Network class="mr-1.5 size-4" /> Cała sieć
+        </TabsTrigger>
         <TabsTrigger value="movements">
           <ArrowLeftRight class="mr-1.5 size-4" /> Przyjęcie/Wydanie
         </TabsTrigger>
@@ -68,6 +71,10 @@ const tab = ref<'levels' | 'movements' | 'products' | 'suppliers'>('levels')
           :org-id="activeOrgId"
           :branch-id="activeBranchId"
         />
+      </TabsContent>
+
+      <TabsContent v-if="isAdmin" value="network" class="mt-4">
+        <StockNetwork v-if="activeOrgId" :key="activeOrgId" :org-id="activeOrgId" />
       </TabsContent>
 
       <TabsContent value="movements" class="mt-4">

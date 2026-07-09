@@ -4,6 +4,11 @@ import { MapPin, Users as UsersIcon, Plus, Pencil } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 
 const supabase = useSupabaseClient<Database>()
+const { isDemo, upgradeOpen } = useDemoGuard()
+function blockDemo() {
+  if (isDemo.value) { upgradeOpen.value = true; return true }
+  return false
+}
 const { activeOrgId, activeOrg, isAdmin, load } = useOrg()
 await load()
 
@@ -58,6 +63,7 @@ function openEdit(b: BranchRow) {
 }
 
 async function save() {
+  if (blockDemo()) return
   if (!form.name.trim() || !activeOrgId.value) return
   saving.value = true
   const payload = {
@@ -79,6 +85,7 @@ async function save() {
 }
 
 async function toggleActive(b: BranchRow) {
+  if (blockDemo()) return
   const { error } = await supabase
     .from('branches')
     .update({ active: !b.active })

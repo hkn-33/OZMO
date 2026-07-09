@@ -5,20 +5,28 @@ definePageMeta({ layout: 'auth' })
 
 const supabase = useSupabaseClient()
 const route = useRoute()
-const email = ref('')
+const identifier = ref('')
 const password = ref('')
 const loading = ref(false)
 
 async function onSubmit() {
   loading.value = true
-  const { error } = await supabase.auth.signInWithPassword({
-    email: email.value,
+  // Nazwa użytkownika (bez @) → wewnętrzny e-mail; e-mail przechodzi bez zmian.
+  const input = identifier.value.trim()
+  const email = input.includes('@') ? input : `${input.toLowerCase()}@users.ozmo.local`
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
     password: password.value,
   })
   loading.value = false
 
   if (error) {
     toast.error('Nie udało się zalogować', { description: error.message })
+    return
+  }
+  // Pierwsze logowanie (konto założone przez menadżera) → zmiana hasła.
+  if (data.user?.user_metadata?.must_change_password) {
+    await navigateTo('/auth/change-password')
     return
   }
   await navigateTo((route.query.next as string) || '/')
@@ -29,18 +37,17 @@ async function onSubmit() {
   <Card>
     <CardHeader>
       <CardTitle>Zaloguj się</CardTitle>
-      <CardDescription>Wpisz e-mail i hasło, aby kontynuować.</CardDescription>
+      <CardDescription>Wpisz nazwę użytkownika lub e-mail i hasło.</CardDescription>
     </CardHeader>
     <CardContent>
       <form class="space-y-4" @submit.prevent="onSubmit">
         <div class="space-y-2">
-          <Label for="email">E-mail</Label>
+          <Label for="email">Nazwa użytkownika lub e-mail</Label>
           <Input
             id="email"
-            v-model="email"
-            type="email"
-            autocomplete="email"
-            placeholder="ty@firma.pl"
+            v-model="identifier"
+            autocomplete="username"
+            placeholder="jan.kowalski"
             required
           />
         </div>

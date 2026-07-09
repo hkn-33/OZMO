@@ -3,6 +3,9 @@ import { Building2, CalendarClock } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 import { tzTime } from '~/lib/tz'
 
+// `/` jest publiczne: niezalogowani widzą landing, zalogowani — pulpit.
+definePageMeta({ layout: false })
+
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
 const { activeOrgId, activeOrg, role, load } = useOrg()
@@ -73,6 +76,8 @@ const nextShiftLabel = computed(() => {
 </script>
 
 <template>
+  <Landing v-if="!user" />
+  <NuxtLayout v-else name="default">
   <div class="space-y-6">
     <div>
       <h1 class="text-2xl font-bold tracking-tight">
@@ -134,4 +139,5 @@ const nextShiftLabel = computed(() => {
       </div>
     </div>
   </div>
+  </NuxtLayout>
 </template>

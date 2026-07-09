@@ -14,6 +14,7 @@ const router = useRouter()
 
 const { activeOrgId, isAdmin, load: loadOrg } = useOrg()
 const { activeBranchId, activeBranch, load: loadBranch } = useBranch()
+const { guard } = useDemoGuard()
 await loadOrg()
 await loadBranch()
 watch(activeOrgId, () => loadBranch(true))
@@ -83,7 +84,7 @@ watch(detailOpen, (v) => {
         <h1 class="text-2xl font-bold tracking-tight">Zadania</h1>
         <p class="text-muted-foreground">{{ activeBranch?.name ?? 'Wybierz oddział' }}</p>
       </div>
-      <Button v-if="view !== 'templates' && activeBranchId" @click="newOpen = true">
+      <Button v-if="view !== 'templates' && activeBranchId" @click="guard(() => (newOpen = true))">
         <Plus class="mr-2 size-4" /> Nowe zadanie
       </Button>
     </div>
@@ -147,6 +148,7 @@ watch(detailOpen, (v) => {
       :members="data?.members ?? []"
       :can-manage="canManage"
       @changed="refresh"
+      @open="openTask"
     />
   </div>
 </template>

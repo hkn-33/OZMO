@@ -20,6 +20,7 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ saved: [] }>()
 
 const supabase = useSupabaseClient<Database>()
+const { isDemo, upgradeOpen } = useDemoGuard()
 const user = useSupabaseUser()
 
 const CATEGORIES: { value: CostCategory; label: string }[] = [
@@ -48,6 +49,7 @@ watch(open, (v) => {
 
 const saving = ref(false)
 async function save() {
+  if (isDemo.value) { upgradeOpen.value = true; return }
   const amount = Number(form.amount)
   if (!Number.isFinite(amount) || amount < 0) {
     toast.error('Podaj kwotę ≥ 0')

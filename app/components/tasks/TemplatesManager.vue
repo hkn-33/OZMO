@@ -18,6 +18,11 @@ const props = defineProps<{
 const emit = defineEmits<{ changed: [] }>()
 
 const supabase = useSupabaseClient<Database>()
+const { isDemo, upgradeOpen } = useDemoGuard()
+function blockDemo() {
+  if (isDemo.value) { upgradeOpen.value = true; return true }
+  return false
+}
 const user = useSupabaseUser()
 
 const dialogOpen = ref(false)
@@ -48,6 +53,7 @@ function removeItem(i: number) {
 }
 
 async function save() {
+  if (blockDemo()) return
   if (!form.name.trim()) return
   saving.value = true
   const items = form.items.map((l) => l.trim()).filter(Boolean).map((label) => ({ label }))
@@ -71,6 +77,7 @@ async function save() {
 }
 
 async function remove(t: ChecklistTemplate) {
+  if (blockDemo()) return
   const { error } = await supabase.from('checklist_templates').delete().eq('id', t.id)
   if (error) {
     toast.error('Nie udało się usunąć szablonu', { description: error.message })

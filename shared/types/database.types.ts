@@ -771,6 +771,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -778,6 +779,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -785,6 +787,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          username?: string | null
         }
         Relationships: []
       }
@@ -1061,6 +1064,41 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          org_id: string
+          plan: Database["public"]["Enums"]["plan"]
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          org_id: string
+          plan?: Database["public"]["Enums"]["plan"]
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          org_id?: string
+          plan?: Database["public"]["Enums"]["plan"]
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           contact_name: string | null
@@ -1221,6 +1259,42 @@ export type Database = {
           },
         ]
       }
+      task_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          linked_task_id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          linked_task_id: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          linked_task_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_links_linked_task_id_fkey"
+            columns: ["linked_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           branch_id: string
@@ -1294,21 +1368,42 @@ export type Database = {
         }
         Returns: number
       }
-      create_organization: {
-        Args: { _name: string; _slug: string }
-        Returns: {
-          created_at: string
-          created_by: string | null
-          id: string
-          name: string
-          slug: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "organizations"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+      create_organization:
+        | {
+            Args: { _name: string }
+            Returns: {
+              created_at: string
+              created_by: string | null
+              id: string
+              name: string
+              slug: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "organizations"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: { _name: string; _slug: string }
+            Returns: {
+              created_at: string
+              created_by: string | null
+              id: string
+              name: string
+              slug: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "organizations"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+      seed_demo_samples: {
+        Args: { _org_id: string; _owner_id: string }
+        Returns: undefined
       }
     }
     Enums: {
@@ -1326,6 +1421,7 @@ export type Database = {
         | "shift_published"
         | "stock_low"
       org_role: "owner" | "admin" | "member"
+      plan: "demo" | "starter" | "pro" | "network"
       report_section: "utarg" | "kasa" | "sanepid" | "magazyn" | "zmiana"
       stock_movement_type:
         | "delivery"
@@ -1480,6 +1576,7 @@ export const Constants = {
         "stock_low",
       ],
       org_role: ["owner", "admin", "member"],
+      plan: ["demo", "starter", "pro", "network"],
       report_section: ["utarg", "kasa", "sanepid", "magazyn", "zmiana"],
       stock_movement_type: [
         "delivery",

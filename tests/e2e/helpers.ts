@@ -94,6 +94,14 @@ export async function seedOrgWithUsers(): Promise<SeededOrg> {
     .single()
   if (orgErr) throw new Error(`org: ${orgErr.message}`)
 
+  // Test orgs are fully functional (network plan), like existing/seeded orgs.
+  // The org-creation trigger provisions a 'demo' subscription; promote it.
+  const { error: subErr } = await admin
+    .from('subscriptions')
+    .update({ plan: 'network' })
+    .eq('org_id', org.id)
+  if (subErr) throw new Error(`subscription: ${subErr.message}`)
+
   const { error: omErr } = await admin.from('org_members').insert([
     { org_id: org.id, user_id: owner.id, role: 'owner' },
     { org_id: org.id, user_id: emp.id, role: 'member' },

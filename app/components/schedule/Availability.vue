@@ -11,6 +11,11 @@ const props = defineProps<{
 }>()
 
 const supabase = useSupabaseClient<Database>()
+const { isDemo, upgradeOpen } = useDemoGuard()
+function blockDemo() {
+  if (isDemo.value) { upgradeOpen.value = true; return true }
+  return false
+}
 const user = useSupabaseUser()
 
 interface AvailRow {
@@ -71,6 +76,7 @@ const form = reactive({ weekday: '0', from: '08:00', to: '16:00', note: '' })
 const saving = ref(false)
 
 async function add() {
+  if (blockDemo()) return
   if (!user.value) return
   if (form.to <= form.from) {
     toast.error('Godzina zakończenia musi być późniejsza niż rozpoczęcia')
@@ -97,6 +103,7 @@ async function add() {
 }
 
 async function remove(r: AvailRow) {
+  if (blockDemo()) return
   const { error } = await supabase.from('availability').delete().eq('id', r.id)
   if (error) {
     toast.error('Nie udało się usunąć', { description: error.message })

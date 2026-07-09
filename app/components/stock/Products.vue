@@ -6,6 +6,11 @@ import type { Database } from '~~/shared/types/database.types'
 const props = defineProps<{ orgId: string; branchId: string }>()
 
 const supabase = useSupabaseClient<Database>()
+const { isDemo, upgradeOpen } = useDemoGuard()
+function blockDemo() {
+  if (isDemo.value) { upgradeOpen.value = true; return true }
+  return false
+}
 
 const UNITS = ['szt', 'kg', 'l', 'opak']
 
@@ -55,6 +60,7 @@ function openEdit(p: Product) {
 
 const saving = ref(false)
 async function save() {
+  if (blockDemo()) return
   if (!form.name.trim()) {
     toast.error('Podaj nazwę produktu')
     return
@@ -82,6 +88,7 @@ async function save() {
 // inline min_stock editing
 const minDrafts = reactive<Record<string, string>>({})
 async function saveMin(p: Product) {
+  if (blockDemo()) return
   const raw = minDrafts[p.id]
   if (raw == null) return
   const val = Number(raw)

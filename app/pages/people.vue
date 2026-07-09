@@ -9,6 +9,14 @@ type BranchRole = Database['public']['Enums']['branch_role']
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
 const { activeOrgId, activeOrg, isAdmin, isOwner, load } = useOrg()
+const { guard, isDemo, upgradeOpen } = useDemoGuard()
+function blockDemo() {
+  if (isDemo.value) {
+    upgradeOpen.value = true
+    return true
+  }
+  return false
+}
 await load()
 
 const orgRoleLabels: Record<OrgRole, string> = {
@@ -24,7 +32,7 @@ const branchRoleLabels: Record<BranchRole, string> = {
 type Member = {
   user_id: string
   role: OrgRole
-  profiles: { full_name: string | null; avatar_url: string | null } | null
+  profiles: { full_name: string | null; avatar_url: string | null; username: string | null } | null
 }
 type BranchAssignment = {
   branch_id: string
@@ -53,7 +61,7 @@ const { data, refresh, pending } = await useAsyncData(
     const [members, assignments, branches, invitations] = await Promise.all([
       supabase
         .from('org_members')
-        .select('user_id, role, profiles(full_name, avatar_url)')
+        .select('user_id, role, profiles(full_name, avatar_url, username)')
         .eq('org_id', org),
       supabase
         .from('branch_members')
@@ -84,9 +92,69 @@ function assignmentsFor(userId: string) {
   return data.value?.assignments.filter((a) => a.user_id === userId) ?? []
 }
 
+// --- dodawanie pracownika (username, bez e-maila) ---
+const addOpen = ref(false)
+const addForm = reactive({
+  username: '',
+  fullName: '',
+  orgRole: 'member' as OrgRole,
+  branchId: '',
+  branchRole: 'employee' as BranchRole,
+})
+const addResult = ref<{ username: string; password: string } | null>(null)
+const adding = ref(false)
+
+function openAdd() {
+  addForm.username = ''
+  addForm.fullName = ''
+  addForm.orgRole = 'member'
+  addForm.branchId = ''
+  addForm.branchRole = 'employee'
+  addResult.value = null
+  addOpen.value = true
+}
+
+async function saveMember() {
+  if (!/^[a-z0-9_.-]{3,30}$/.test(addForm.username.trim().toLowerCase())) {
+    toast.error('Nazwa użytkownika: 3–30 znaków, a-z 0-9 _ . -')
+    return
+  }
+  if (!addForm.fullName.trim()) {
+    toast.error('Podaj imię i nazwisko')
+    return
+  }
+  adding.value = true
+  try {
+    const res = await $fetch<{ username: string; password: string }>('/api/members', {
+      method: 'POST',
+      body: {
+        orgId: activeOrgId.value,
+        username: addForm.username.trim().toLowerCase(),
+        fullName: addForm.fullName.trim(),
+        orgRole: addForm.orgRole,
+        branchId: addForm.branchId || null,
+        branchRole: addForm.branchId ? addForm.branchRole : null,
+      },
+    })
+    addResult.value = res
+    toast.success('Pracownik dodany')
+    await refresh()
+  } catch (e: any) {
+    toast.error('Nie udało się dodać pracownika', { description: e?.data?.message ?? e?.message })
+  } finally {
+    adding.value = false
+  }
+}
+
+async function copyText(text: string) {
+  await navigator.clipboard.writeText(text)
+  toast.success('Skopiowano')
+}
+
 // --- zmiana roli w organizacji ---
 async function changeOrgRole(m: Member, role: OrgRole) {
   if (role === m.role) return
+  if (blockDemo()) { await refresh(); return }
   const { error } = await supabase
     .from('org_members')
     .update({ role })
@@ -102,6 +170,7 @@ async function changeOrgRole(m: Member, role: OrgRole) {
 }
 
 async function removeFromOrg(m: Member) {
+  if (blockDemo()) return
   const { error } = await supabase
     .from('org_members')
     .delete()
@@ -116,6 +185,7 @@ async function removeFromOrg(m: Member) {
 }
 
 async function removeFromBranch(a: BranchAssignment) {
+  if (blockDemo()) return
   const { error } = await supabase
     .from('branch_members')
     .delete()
@@ -143,6 +213,7 @@ function openAssign(m: Member) {
 
 async function saveAssign() {
   if (!assignForm.branchId || !assignTarget.value) return
+  if (blockDemo()) { assignOpen.value = false; return }
   const { error } = await supabase.from('branch_members').upsert(
     {
       branch_id: assignForm.branchId,
@@ -236,9 +307,9 @@ const branchName = (id: string) =>
         <h1 class="text-2xl font-bold tracking-tight">Zespół</h1>
         <p class="text-muted-foreground">{{ activeOrg?.name ?? '' }}</p>
       </div>
-      <Button v-if="isAdmin" @click="openInvite">
+      <Button v-if="isAdmin" @click="guard(openAdd)">
         <UserPlus class="mr-2 size-4" />
-        Zaproś
+        Dodaj pracownika
       </Button>
     </div>
 
@@ -267,6 +338,9 @@ const branchName = (id: string) =>
                   <span class="font-medium">{{ memberName(m) }}</span>
                   <Badge v-if="m.user_id === user?.id" variant="outline">Ty</Badge>
                 </div>
+                <p v-if="m.profiles?.username" class="text-xs text-muted-foreground">
+                  @{{ m.profiles.username }}
+                </p>
                 <div class="flex flex-wrap gap-1">
                   <Badge
                     v-for="a in assignmentsFor(m.user_id)"
@@ -329,6 +403,11 @@ const branchName = (id: string) =>
 
       <!-- Zaproszenia -->
       <TabsContent v-if="isAdmin" value="invitations" class="space-y-3">
+        <div class="flex justify-end">
+          <Button variant="outline" size="sm" @click="guard(openInvite)">
+            <UserPlus class="mr-2 size-4" /> Zaproś e-mailem
+          </Button>
+        </div>
         <p
           v-if="!data?.invitations.length"
           class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground"
@@ -356,6 +435,94 @@ const branchName = (id: string) =>
         </Card>
       </TabsContent>
     </Tabs>
+
+    <!-- Dialog: dodanie pracownika (username, hasło tymczasowe) -->
+    <Dialog v-model:open="addOpen">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Dodaj pracownika</DialogTitle>
+          <DialogDescription>
+            Utwórz konto z nazwą użytkownika i hasłem tymczasowym (bez e-maila).
+          </DialogDescription>
+        </DialogHeader>
+
+        <div v-if="addResult" class="space-y-3">
+          <p class="text-sm text-muted-foreground">
+            Przekaż dane pracownikowi. Hasło pokazywane jest tylko teraz.
+          </p>
+          <div class="space-y-1">
+            <Label>Nazwa użytkownika</Label>
+            <div class="flex gap-2">
+              <Input :model-value="addResult.username" readonly />
+              <Button variant="outline" size="icon" @click="copyText(addResult.username)">
+                <Copy class="size-4" />
+              </Button>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <Label>Hasło tymczasowe</Label>
+            <div class="flex gap-2">
+              <Input :model-value="addResult.password" readonly />
+              <Button variant="outline" size="icon" @click="copyText(addResult.password)">
+                <Copy class="size-4" />
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" @click="addOpen = false">Zamknij</Button>
+          </DialogFooter>
+        </div>
+
+        <form v-else class="space-y-4" @submit.prevent="saveMember">
+          <div class="space-y-2">
+            <Label for="m-username">Nazwa użytkownika</Label>
+            <Input id="m-username" v-model="addForm.username" placeholder="jan.kowalski" required />
+            <p class="text-xs text-muted-foreground">3–30 znaków: a-z, 0-9, _ . -</p>
+          </div>
+          <div class="space-y-2">
+            <Label for="m-name">Imię i nazwisko</Label>
+            <Input id="m-name" v-model="addForm.fullName" placeholder="Jan Kowalski" required />
+          </div>
+          <div class="space-y-2">
+            <Label>Rola w organizacji</Label>
+            <Select v-model="addForm.orgRole">
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem v-if="isOwner" value="owner">{{ orgRoleLabels.owner }}</SelectItem>
+                <SelectItem value="admin">{{ orgRoleLabels.admin }}</SelectItem>
+                <SelectItem value="member">{{ orgRoleLabels.member }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="space-y-2">
+            <Label>Oddział (opcjonalnie)</Label>
+            <Select v-model="addForm.branchId">
+              <SelectTrigger><SelectValue placeholder="Bez przypisania" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="b in data?.branches" :key="b.id" :value="b.id">
+                  {{ b.name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div v-if="addForm.branchId" class="space-y-2">
+            <Label>Rola w oddziale</Label>
+            <Select v-model="addForm.branchRole">
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manager">{{ branchRoleLabels.manager }}</SelectItem>
+                <SelectItem value="employee">{{ branchRoleLabels.employee }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button type="submit" :disabled="adding">
+              {{ adding ? 'Dodawanie…' : 'Dodaj pracownika' }}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
 
     <!-- Dialog: przypisanie do oddziału -->
     <Dialog v-model:open="assignOpen">

@@ -13,6 +13,11 @@ const props = defineProps<{
 }>()
 
 const supabase = useSupabaseClient<Database>()
+const { isDemo, upgradeOpen } = useDemoGuard()
+function blockDemo() {
+  if (isDemo.value) { upgradeOpen.value = true; return true }
+  return false
+}
 const user = useSupabaseUser()
 
 interface Note {
@@ -74,6 +79,7 @@ async function load() {
 watch([() => props.branchId, date], load, { immediate: true })
 
 async function addNote() {
+  if (blockDemo()) return
   const text = newBody.value.trim()
   if (!text || !user.value) return
   saving.value = true
@@ -115,6 +121,7 @@ function cancelEdit() {
   editBody.value = ''
 }
 async function saveEdit(n: Note) {
+  if (blockDemo()) return
   const text = editBody.value.trim()
   if (!text) return
   const { error } = await supabase.from('day_notes').update({ body: text }).eq('id', n.id)
@@ -126,6 +133,7 @@ async function saveEdit(n: Note) {
   cancelEdit()
 }
 async function remove(n: Note) {
+  if (blockDemo()) return
   const { error } = await supabase.from('day_notes').delete().eq('id', n.id)
   if (error) {
     toast.error('Nie udało się usunąć', { description: error.message })

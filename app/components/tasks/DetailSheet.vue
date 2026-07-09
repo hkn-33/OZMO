@@ -18,10 +18,18 @@ const props = defineProps<{
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
-const emit = defineEmits<{ changed: [] }>()
+const emit = defineEmits<{ changed: []; open: [id: string] }>()
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
+const { isDemo, upgradeOpen } = useDemoGuard()
+function blockDemo() {
+  if (isDemo.value) {
+    upgradeOpen.value = true
+    return true
+  }
+  return false
+}
 
 const statusLabels: Record<TaskStatus, string> = {
   todo: 'Do zrobienia',
@@ -59,11 +67,19 @@ type Comment = {
   created_at: string
 }
 
+type LinkedTask = { id: string; title: string; status: TaskStatus }
+
 const task = ref<TaskFull | null>(null)
 const assignees = ref<string[]>([])
 const checklist = ref<ChecklistItem[]>([])
 const comments = ref<Comment[]>([])
 const loading = ref(false)
+
+// Powiązane zadania
+const linkedTasks = ref<LinkedTask[]>([])
+const branchTasks = ref<LinkedTask[]>([])
+const linkQuery = ref('')
+const linkPickerOpen = ref(false)
 
 const edit = reactive({ title: '', description: '', due: '' })
 const savingDetails = ref(false)
@@ -105,6 +121,69 @@ async function loadTask(id: string) {
   loading.value = false
 }
 
+async function loadLinks(id: string) {
+  const { data: links } = await supabase
+    .from('task_links')
+    .select('task_id, linked_task_id')
+    .or(`task_id.eq.${id},linked_task_id.eq.${id}`)
+  const otherIds = [
+    ...new Set((links ?? []).map((l) => (l.task_id === id ? l.linked_task_id : l.task_id))),
+  ]
+  if (otherIds.length) {
+    const { data } = await supabase.from('tasks').select('id, title, status').in('id', otherIds)
+    linkedTasks.value = (data ?? []) as LinkedTask[]
+  } else {
+    linkedTasks.value = []
+  }
+  const { data: bt } = await supabase
+    .from('tasks')
+    .select('id, title, status')
+    .eq('branch_id', props.branchId)
+    .order('created_at', { ascending: false })
+  branchTasks.value = (bt ?? []) as LinkedTask[]
+}
+
+const linkCandidates = computed(() => {
+  const linkedIds = new Set(linkedTasks.value.map((t) => t.id))
+  const q = linkQuery.value.toLowerCase()
+  return branchTasks.value
+    .filter((t) => t.id !== task.value?.id && !linkedIds.has(t.id))
+    .filter((t) => !q || t.title.toLowerCase().includes(q))
+    .slice(0, 8)
+})
+
+async function addLink(otherId: string) {
+  if (!task.value) return
+  if (blockDemo()) return
+  const { error } = await supabase
+    .from('task_links')
+    .insert({ task_id: task.value.id, linked_task_id: otherId })
+  if (error) {
+    toast.error('Nie udało się powiązać', { description: error.message })
+    return
+  }
+  linkQuery.value = ''
+  linkPickerOpen.value = false
+  await loadLinks(task.value.id)
+}
+
+async function removeLink(otherId: string) {
+  if (!task.value) return
+  if (blockDemo()) return
+  const id = task.value.id
+  const { error } = await supabase
+    .from('task_links')
+    .delete()
+    .or(
+      `and(task_id.eq.${id},linked_task_id.eq.${otherId}),and(task_id.eq.${otherId},linked_task_id.eq.${id})`,
+    )
+  if (error) {
+    toast.error('Nie udało się usunąć powiązania', { description: error.message })
+    return
+  }
+  await loadLinks(id)
+}
+
 async function subscribeComments(id: string) {
   const { data } = await supabase.auth.getSession()
   if (data.session) await supabase.realtime.setAuth(data.session.access_token)
@@ -134,6 +213,10 @@ function teardown() {
   comments.value = []
   checklist.value = []
   assignees.value = []
+  linkedTasks.value = []
+  branchTasks.value = []
+  linkQuery.value = ''
+  linkPickerOpen.value = false
 }
 
 // Fallback: odśwież komentarze po powrocie fokusu do okna.
@@ -162,6 +245,7 @@ watch(
     if (isOpen && id) {
       await loadTask(id)
       await subscribeComments(id)
+      await loadLinks(id)
       onCleanup(() => teardown())
     }
   },
@@ -169,6 +253,7 @@ watch(
 
 async function updateTaskField(patch: Partial<TaskFull>) {
   if (!task.value) return
+  if (blockDemo()) return false
   const { error } = await supabase.from('tasks').update(patch).eq('id', task.value.id)
   if (error) {
     toast.error('Nie udało się zapisać', { description: error.message })
@@ -197,6 +282,7 @@ async function saveDetails() {
 }
 
 async function toggleChecklist(item: ChecklistItem) {
+  if (blockDemo()) return
   const done = !item.done
   const { error } = await supabase
     .from('task_checklist_items')
@@ -217,6 +303,7 @@ async function toggleChecklist(item: ChecklistItem) {
 
 async function addAssignee(userId: string) {
   if (!task.value) return
+  if (blockDemo()) return
   const { error } = await supabase
     .from('task_assignees')
     .insert({ task_id: task.value.id, user_id: userId })
@@ -229,6 +316,7 @@ async function addAssignee(userId: string) {
 }
 async function removeAssignee(userId: string) {
   if (!task.value) return
+  if (blockDemo()) return
   const { error } = await supabase
     .from('task_assignees')
     .delete()
@@ -244,6 +332,7 @@ async function removeAssignee(userId: string) {
 
 async function deleteTask() {
   if (!task.value) return
+  if (blockDemo()) return
   const { error } = await supabase.from('tasks').delete().eq('id', task.value.id)
   if (error) {
     toast.error('Nie udało się usunąć zadania', { description: error.message })
@@ -284,6 +373,7 @@ function pickMention(m: TaskMember) {
 
 async function sendComment() {
   if (!commentBody.value.trim() || !task.value || !user.value) return
+  if (blockDemo()) return
   const ids = new Set<string>()
   for (const [name, id] of Object.entries(mentionMap.value)) {
     if (commentBody.value.includes(`@${name}`)) ids.add(id)
@@ -423,6 +513,69 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
               </div>
             </li>
           </ul>
+        </div>
+
+        <!-- Powiązane zadania -->
+        <div class="space-y-2">
+          <Label class="text-xs text-muted-foreground">Powiązane zadania</Label>
+          <ul v-if="linkedTasks.length" class="space-y-1">
+            <li
+              v-for="lt in linkedTasks"
+              :key="lt.id"
+              class="flex items-center gap-2 rounded border px-2 py-1.5"
+            >
+              <button
+                data-testid="linked-task"
+                class="min-w-0 flex-1 truncate text-left text-sm hover:underline"
+                @click="emit('open', lt.id)"
+              >
+                {{ lt.title }}
+              </button>
+              <Badge variant="secondary" class="shrink-0 text-[10px]">
+                {{ statusLabels[lt.status] }}
+              </Badge>
+              <button class="shrink-0 opacity-60 hover:opacity-100" @click="removeLink(lt.id)">
+                <X class="size-3.5" />
+              </button>
+            </li>
+          </ul>
+          <div class="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              class="h-7 gap-1 px-2 text-xs"
+              @click="linkPickerOpen = !linkPickerOpen"
+            >
+              <Plus class="size-3" /> Powiąż zadanie
+            </Button>
+            <div
+              v-if="linkPickerOpen"
+              class="absolute left-0 top-full z-10 mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md"
+            >
+              <Input
+                v-model="linkQuery"
+                placeholder="Szukaj zadania…"
+                class="rounded-none border-0 border-b focus-visible:ring-0"
+              />
+              <div class="max-h-48 overflow-y-auto">
+                <button
+                  v-for="c in linkCandidates"
+                  :key="c.id"
+                  data-testid="link-candidate"
+                  class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent"
+                  @click="addLink(c.id)"
+                >
+                  <span class="min-w-0 flex-1 truncate">{{ c.title }}</span>
+                  <Badge variant="secondary" class="shrink-0 text-[10px]">
+                    {{ statusLabels[c.status] }}
+                  </Badge>
+                </button>
+                <p v-if="!linkCandidates.length" class="px-3 py-2 text-xs text-muted-foreground">
+                  Brak zadań do powiązania.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Komentarze -->

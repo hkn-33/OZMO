@@ -44,6 +44,10 @@ const sheetOpen = ref(false)
 const { memberships, activeOrg, activeOrgId, setActive, load } = useOrg()
 await load()
 
+const { load: loadSubscription } = useSubscription()
+await loadSubscription()
+watch(activeOrgId, () => loadSubscription(true))
+
 const userLabel = computed(() => user.value?.email ?? 'Konto')
 const userInitial = computed(() => (user.value?.email?.[0] ?? '?').toUpperCase())
 
@@ -209,5 +213,7 @@ async function logout() {
         Więcej
       </button>
     </nav>
+
+    <UpgradeModal />
   </div>
 </template>

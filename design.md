@@ -201,6 +201,7 @@ design.md               # TEN PLIK
 | 4 | Grafik (M5) | ⬜ |
 | 5 | Magazyn (M8) + koszty (M9) | ⬜ |
 | 6 | Szlif: PWA, wydajność, testy E2E krytycznych ścieżek, RODO-czyszczenie | ✅ |
+| 7 | Feedback: landing+cennik, subskrypcje+demo (M11), users po username, powiązania zadań, wskaźnik pisania, widok sieci magazynu, fix realtime, konto testowe | ✅ |
 
 Każda faza kończy się działającą aplikacją (migracje + UI + realtime tam gdzie trzeba).
 
@@ -365,6 +366,102 @@ Decyzje z researchu:
   reset generuje jedynie 2 nowe relacje do `profiles`.
 - **Weryfikacja:** `supabase db reset` (10 migracji, czysto) + `db restart kong` (znany quirk) +
   `db:types` + `nuxt build` — wszystko OK; pełny E2E 8/8 PASS na świeżo zresetowanej bazie.
+
+### Odstępstwa z fazy 7 (runda feedbacku użytkowników, 2026-07-09)
+
+Cztery migracje: `20260709210000_phase7_username.sql`, `..210100_phase7_subscriptions.sql`,
+`..210200_phase7_task_links.sql`, `..210300_phase7_slug_and_typing.sql`.
+
+**1. Landing + cennik (publiczne `/`).** `@nuxtjs/supabase` `redirectOptions.exclude`
+rozszerzone o `'/'` — niezalogowani widzą landing zamiast redirectu na login.
+`pages/index.vue` ma `layout: false` i renderuje `<Landing />` dla anonima albo
+`<NuxtLayout name="default">` z pulpitem dla zalogowanego. `components/Landing.vue`:
+hero (PL), 6 modułów, 3 pakiety (placeholder: Starter 149 / Pro 249 / Sieć 399 zł/mc
+per lokal, „ceny wkrótce"), CTA → `/auth/register`, stopka. Markup semantyczny/prosty
+(osobny pass designu później). Rejestracja: podtytuł „Załóż konto i przetestuj OZMO
+w trybie demo".
+
+**2. Subskrypcje + bramka demo (M11).** Enum `plan` (demo|starter|pro|network), tabela
+`subscriptions` (org_id unique, plan default demo, status, current_period_end, created_at).
+Trigger `handle_new_org_subscription` (`after insert on organizations`) tworzy wiersz
+`demo`. **Backfill istniejących orgów → `network`** (funkcjonalne). RLS: SELECT dla
+członków org; **brak polityk zapisu dla klienta** (webhooki Stripe później → service_role).
+`useSubscription()` (plan + `isDemo`). **Bramka demo = UI-only (Stripe później):**
+`useDemoGuard().guard(fn)` uruchamia `fn` albo otwiera wspólny `UpgradeModal.vue`
+(renderowany raz w `layouts/default.vue`, stan w `useState`). Wpięte we wszystkie
+podstawowe akcje create/edit/delete: nowe zadanie, komentarz/checklista/przypisania/
+usuń w `TasksDetailSheet`, szablony, oddziały, dodanie pracownika/zmiana ról/przypisania
+(people), wysyłka czatu, ruch magazynowy, produkty/dostawcy, notatka dnia, tworzenie/
+zamknięcie raportu, zmiana/publikacja/kopiowanie grafiku, dostępność, wpisy kosztów,
+powiązania zadań. **Przykładowe dane demo** seeduje `seed_demo_samples(org, owner)`
+wywoływane **tylko** przez `create_organization` (ścieżka onboardingu) — orgy tworzone
+przez service_role (testy, `seed.sql`) są czyste i podnoszone do `network`. Sample: 1
+oddział „Przykład:", 3 zadania, 2 wiadomości org, 2 produkty + stany; owinięte w
+`exception when others` (nie blokują utworzenia org).
+
+**3. Użytkownicy po nazwie (bez maili).** `profiles.username` (unikat przez
+`unique index (lower(username))`, bez zależności citext). Trigger `handle_new_user`
+generuje unikalny username z metadanych albo local-part e-maila (sanityzacja
+`[a-z0-9_.-]`, sufiks numeryczny przy kolizji); backfill istniejących. Route
+`POST /api/members` (service_role): tworzy konto `${username}@users.ozmo.local`,
+`email_confirm`, `user_metadata {username, full_name, must_change_password}`, **hasło
+tymczasowe (pokazywane raz)**, wpisuje org_members (+ branch_members). Autoryzacja:
+org admin **albo** manager oddziału dodający do własnego oddziału. Login: pole „Nazwa
+użytkownika lub e-mail" — wejście bez `@` → `${input}@users.ozmo.local`; ścieżka e-mail
+zachowana. Pierwsze logowanie: `must_change_password` → redirect na
+`/auth/change-password` (login sprawdza flagę z odpowiedzi + globalny middleware jako
+zabezpieczenie); po zmianie hasła **`refreshSession()`** przed nawigacją (JWT niesie
+metadane z chwili wydania — bez odświeżenia middleware zapętla redirect). Stary flow
+zaproszeń e-mail zachowany (API + strony), przeniesiony z UI głównego do przycisku
+„Zaproś e-mailem" w zakładce Zaproszenia. People pokazuje `@username`.
+
+**4. Bez slugów w UI.** Nowa sygnatura `create_organization(_name text)` — slug
+generowany wewnątrz RPC (slugifikacja nazwy + losowy sufiks przy kolizji). Onboarding =
+tylko pole nazwy. 2-argumentowa wersja RPC pozostaje (nieużywana z UI). URL-e i tak nie
+używają slugów.
+
+**5. Fix realtime czatu (krytyczny).** Przyczyna „wiadomości dopiero po odświeżeniu"
+w praktyce była już częściowo pokryta (`setAuth` w komponentach). Dodano plugin
+`realtime-auth.client.ts`: `supabase.realtime.setAuth(token)` przy starcie i przy każdej
+zmianie sesji (`onAuthStateChange`) — token realtime zawsze świeży. **Realny bug znaleziony
+przy okazji wskaźnika pisania:** po twardym wejściu na stronę `useSupabaseUser().value`
+to *claims* JWT (`.sub`, bez `.id`) — payload broadcastu miał `id: undefined`, więc
+odbiorca go odrzucał. Fix: `myId() = user.id ?? user.sub` (ten sam wzorzec co §10 faza 6).
+Zweryfikowano E2E: wiadomość wysłana w kontekście A pojawia się w B < ~3 s bez
+przeładowania.
+
+**6. Wskaźnik pisania.** `useTypingIndicator(selfId)` (ephemeryczny broadcast, event
+`typing` na tym samym kanale `chat:{id}`; wygasa po 3 s bez zdarzeń; wysyłka throttlowana
+1/2 s). Wysyłka broadcastu z klienta na kanał prywatny wymaga **polityki INSERT na
+`realtime.messages`** (`realtime_write_chat_topics`, gate `chat:%` + `can_access_channel_topic`)
+— obok polityk SELECT z faz 2/3. Zweryfikowano node + E2E (dwa konteksty). Wątki
+komentarzy: composable reużywalny, na razie wpięty tylko w czat grupowy.
+
+**7. Powiązania zadań.** Tabela `task_links` (PK `task_id,linked_task_id`, CHECK
+`task_id<>linked_task_id`, `created_by default auth.uid()`). Trigger `enforce_task_link`
+wymusza tę samą organizację obu zadań i odrzuca odwrotną parę (semantyka symetryczna —
+jeden wiersz, zapytania w obu kierunkach). RLS: SELECT/DELETE gdy `can_access_task` po
+którejkolwiek stronie; INSERT gdy dostęp do obu + `created_by=auth.uid()`. UI:
+`TasksDetailSheet` sekcja „Powiązane zadania" — lista z badge statusu (klik → otwiera
+zadanie przez emit `open`), dodawanie przez search-combobox zadań oddziału, usuwanie.
+
+**8. Magazyn — widok sieci + konto testowe.** `components/stock/Network.vue`: zakładka
+„Cała sieć" (tylko org admin) — matryca produkt × oddział (desktop `Table` z
+`overflow-x-auto`; mobile `Accordion` z rozbiciem per oddział), komórki na czerwono
+poniżej `min_stock`, kolumna „Razem". **Konto testowe w `seed.sql`** (idempotentne przez
+guard na istnienie `demo@users.ozmo.local`; auth.users z `extensions.crypt`+identities):
+login **demo / Demo1234!**, org „Restauracje Bella" (network), 3 oddziały, 6 dodatkowych
+pracowników (PL), 10 zadań z checklistami/komentarzami, wiadomości org+oddziały, notatki
+dnia, 1 raport zamknięty (→ przychód) + 1 szkic, zmiany bieżącego tygodnia + dostępność,
+15 produktów + stany/ruchy (część poniżej minimum), dostawcy, koszty+przychód (~20 dni)
+dla sensownych KPI. `seedOrgWithUsers` (testy) podnosi org do `network`.
+
+**Weryfikacja:** `supabase db reset` (14 migracji + seed) czysto; `db restart kong`;
+`db:types`; `nuxt build` czysto; **Playwright 13/13 PASS** na świeżym resecie
+(01 onboarding bez slug, 02 dodanie po username + login + zmiana hasła, 03–07 bez zmian
+działania, 04 live chat + typing w dwóch kontekstach, 08 landing z cennikiem dla anonima,
+09 klik „Nowe zadanie" w orgu demo → UpgradeModal, 10 powiązania zadań add/nawigacja,
+11 matryca „Cała sieć" + login demo/Demo1234! pokazuje pulpit z danymi).
 
 ## 11. Konwencje
 

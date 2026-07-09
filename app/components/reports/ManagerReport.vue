@@ -13,6 +13,11 @@ const props = defineProps<{
 }>()
 
 const supabase = useSupabaseClient<Database>()
+const { isDemo, upgradeOpen } = useDemoGuard()
+function blockDemo() {
+  if (isDemo.value) { upgradeOpen.value = true; return true }
+  return false
+}
 const user = useSupabaseUser()
 
 type FieldType = 'number' | 'textarea' | 'bool'
@@ -141,6 +146,7 @@ async function load() {
 watch([() => props.branchId, date], load, { immediate: true })
 
 async function createReport() {
+  if (blockDemo()) return
   if (!user.value) return
   creating.value = true
   const { data, error } = await supabase
@@ -158,6 +164,7 @@ async function createReport() {
 }
 
 async function saveSection(s: SectionRow) {
+  if (blockDemo()) return
   const form = forms.value[s.id]!
   const { completed, ...rest } = form
   // konwersja pól liczbowych
@@ -183,6 +190,7 @@ async function saveSection(s: SectionRow) {
 }
 
 async function closeReport() {
+  if (blockDemo()) return
   if (!report.value) return
   closing.value = true
   const { error } = await supabase

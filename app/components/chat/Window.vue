@@ -9,6 +9,7 @@ const emit = defineEmits<{ read: [channelId: string] }>()
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
+const { isDemo, upgradeOpen } = useDemoGuard()
 
 interface Message {
   id: string
@@ -27,6 +28,30 @@ const scroller = ref<HTMLElement | null>(null)
 const body = ref('')
 const sending = ref(false)
 let channel: RealtimeChannel | null = null
+
+// Po twardym wejściu na stronę `user.value` to *claims* JWT (`.sub`, bez `.id`).
+const myId = () =>
+  user.value?.id ?? (user.value as { sub?: string } | null)?.sub
+
+const {
+  label: typingLabel,
+  receive: onTyping,
+  throttle,
+  clear: clearTyping,
+} = useTypingIndicator(myId)
+
+const myName = computed(() => {
+  const meta = (user.value as { user_metadata?: { full_name?: string } } | null)?.user_metadata
+  return meta?.full_name?.trim() || 'Ktoś'
+})
+
+const notifyTyping = throttle(() => {
+  channel?.send({
+    type: 'broadcast',
+    event: 'typing',
+    payload: { id: myId(), name: myName.value },
+  })
+})
 
 function nameOf(id: string) {
   return names.value[id] ?? 'Użytkownik'
@@ -114,6 +139,9 @@ async function subscribe() {
       scrollToBottom(true)
       if (p.author_id !== user.value?.id) markRead()
     })
+    .on('broadcast', { event: 'typing' }, (msg) => {
+      onTyping(msg.payload as { id: string; name: string })
+    })
   channel.subscribe()
 }
 
@@ -122,11 +150,16 @@ function teardown() {
     supabase.removeChannel(channel)
     channel = null
   }
+  clearTyping()
 }
 
 async function send() {
   const text = body.value.trim()
   if (!text || sending.value || !user.value) return
+  if (isDemo.value) {
+    upgradeOpen.value = true
+    return
+  }
   sending.value = true
   const { data, error } = await supabase
     .from('chat_messages')
@@ -226,12 +259,16 @@ onBeforeUnmount(teardown)
     </div>
 
     <div class="border-t p-3">
+      <p class="mb-1 h-4 text-xs text-muted-foreground" data-testid="typing-indicator">
+        {{ typingLabel }}
+      </p>
       <div class="flex items-end gap-2">
         <Textarea
           v-model="body"
           rows="1"
           placeholder="Napisz wiadomość… (Enter wysyła, Shift+Enter nowa linia)"
           class="max-h-32 min-h-9 resize-none"
+          @input="notifyTyping"
           @keydown.enter.exact.prevent="send"
         />
         <Button size="icon" :disabled="sending || !body.trim()" @click="send">

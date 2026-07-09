@@ -47,6 +47,7 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ saved: [] }>()
 
 const supabase = useSupabaseClient<Database>()
+const { isDemo, upgradeOpen } = useDemoGuard()
 const user = useSupabaseUser()
 
 const form = reactive({
@@ -112,6 +113,7 @@ const availabilityWarning = computed(() => {
 })
 
 async function save() {
+  if (isDemo.value) { upgradeOpen.value = true; return }
   if (!form.userId || !user.value) return
   if (toMin(form.to) <= toMin(form.from)) {
     toast.error('Godzina zakończenia musi być późniejsza niż rozpoczęcia')

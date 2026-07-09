@@ -18,6 +18,11 @@ const props = defineProps<{
 }>()
 
 const supabase = useSupabaseClient<Database>()
+const { isDemo, upgradeOpen } = useDemoGuard()
+function blockDemo() {
+  if (isDemo.value) { upgradeOpen.value = true; return true }
+  return false
+}
 const user = useSupabaseUser()
 
 interface ShiftRow {
@@ -165,6 +170,7 @@ function openEdit(s: ShiftRow) {
 }
 
 async function removeShift(s: ShiftRow) {
+  if (blockDemo()) return
   const { error } = await supabase.from('shifts').delete().eq('id', s.id)
   if (error) {
     toast.error('Nie udało się usunąć zmiany', { description: error.message })
@@ -176,6 +182,7 @@ async function removeShift(s: ShiftRow) {
 
 const publishing = ref(false)
 async function publishWeek() {
+  if (blockDemo()) return
   publishing.value = true
   const { error } = await supabase
     .from('shifts')
@@ -195,6 +202,7 @@ async function publishWeek() {
 
 const copying = ref(false)
 async function copyPrevWeek() {
+  if (blockDemo()) return
   copying.value = true
   const prev = new Date(weekStart.value); prev.setDate(prev.getDate() - 7)
   const { data: count, error } = await supabase.rpc('copy_week_shifts', {

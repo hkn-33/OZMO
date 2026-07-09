@@ -8,30 +8,14 @@ const supabase = useSupabaseClient<Database>()
 const { load } = useOrg()
 
 const name = ref('')
-const slug = ref('')
-const slugEdited = ref(false)
 const loading = ref(false)
 
-function slugify(v: string) {
-  return v
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/ł/g, 'l')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-watch(name, (v) => {
-  if (!slugEdited.value) slug.value = slugify(v)
-})
-
 async function onSubmit() {
-  if (!name.value.trim() || !slug.value.trim()) return
+  if (!name.value.trim()) return
   loading.value = true
+  // Slug generowany wewnętrznie w RPC (nie w UI).
   const { error } = await supabase.rpc('create_organization', {
     _name: name.value.trim(),
-    _slug: slug.value.trim(),
   })
   loading.value = false
 
@@ -64,19 +48,6 @@ async function onSubmit() {
               placeholder="Moja Sieć Lokali"
               required
             />
-          </div>
-          <div class="space-y-2">
-            <Label for="slug">Identyfikator (slug)</Label>
-            <Input
-              id="slug"
-              v-model="slug"
-              placeholder="moja-siec"
-              required
-              @input="slugEdited = true"
-            />
-            <p class="text-xs text-muted-foreground">
-              Używany w adresach. Tylko małe litery, cyfry i myślniki.
-            </p>
           </div>
           <Button type="submit" class="w-full" :disabled="loading">
             {{ loading ? 'Tworzenie…' : 'Utwórz organizację' }}

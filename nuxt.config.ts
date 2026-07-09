@@ -68,7 +68,8 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: '/auth/login',
       callback: '/auth/confirm',
-      exclude: ['/auth/*'],
+      // `/` publiczne (landing dla niezalogowanych); reszta chroniona.
+      exclude: ['/auth/*', '/'],
     },
     types: '~~/shared/types/database.types.ts',
   },

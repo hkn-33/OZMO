@@ -39,7 +39,9 @@ async function onSubmit() {
   <Card>
     <CardHeader>
       <CardTitle>Zarejestruj się</CardTitle>
-      <CardDescription>Utwórz konto za pomocą e-maila i hasła.</CardDescription>
+      <CardDescription>
+        Załóż konto i przetestuj OZMO w trybie demo.
+      </CardDescription>
     </CardHeader>
     <CardContent>
       <form class="space-y-4" @submit.prevent="onSubmit">
