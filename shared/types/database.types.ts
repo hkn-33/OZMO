@@ -112,6 +112,13 @@ export type Database = {
             referencedRelation: "branches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "branch_members_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       branch_product_settings: {
@@ -274,7 +281,7 @@ export type Database = {
           org_id: string
         }
         Insert: {
-          author_id: string
+          author_id?: string
           body: string
           branch_id?: string | null
           channel_id: string
@@ -445,7 +452,7 @@ export type Database = {
           severity: Database["public"]["Enums"]["day_note_severity"]
         }
         Insert: {
-          author_id: string
+          author_id?: string
           body: string
           branch_id: string
           created_at?: string
@@ -684,6 +691,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_members_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1164,7 +1178,7 @@ export type Database = {
           task_id: string
         }
         Insert: {
-          author_id: string
+          author_id?: string
           body: string
           branch_id: string
           created_at?: string

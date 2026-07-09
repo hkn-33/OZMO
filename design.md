@@ -200,7 +200,7 @@ design.md               # TEN PLIK
 | 3 | Czaty grupowe + raport dnia + raport menadżerski (M10, M3, M6) | ⬜ |
 | 4 | Grafik (M5) | ⬜ |
 | 5 | Magazyn (M8) + koszty (M9) | ⬜ |
-| 6 | Szlif: PWA, wydajność, testy E2E krytycznych ścieżek, RODO-czyszczenie | ⬜ |
+| 6 | Szlif: PWA, wydajność, testy E2E krytycznych ścieżek, RODO-czyszczenie | ✅ |
 
 Każda faza kończy się działającą aplikacją (migracje + UI + realtime tam gdzie trzeba).
 
@@ -295,6 +295,76 @@ Decyzje z researchu:
 - **Utarg → przychód realizuje fazę-3 ustalenie:** trigger `sync_revenue_from_report` (`after update on manager_reports`, definer) przy przejściu `draft→closed` liczy sumę `gotowka+karta+inne` z sekcji `utarg` i **upsertuje** `revenue_entries` (`on conflict (branch_id,date,source) do update`). Idempotentne: ponowne zamknięcie/edycja zamkniętego raportu i tak jest blokowane triggerem `enforce_manager_report_transition` z fazy 3, a unikat gwarantuje brak duplikatów przychodu.
 - **UI:** strona `/stock` (sidebar „Magazyn" był już podlinkowany) z zakładkami **Stany** (`StockLevels` — tabela produkt/kategoria/stan+jednostka/min/status badge OK·Niski stan·Brak, szukajka, filtr kategorii, sort „najpierw niskie stany"; klik wiersza → `StockMovementHistory` w prawym Sheet, paginacja 20/stronę), **Przyjęcie/Wydanie** (`StockMovementForm` — wybór typu, produktu, ilości, dostawcy i nr WZ dla dostawy, tryb batch: dodaj wiele pozycji do listy → zapis zbiorczy jednym `insert`; znak `qty_delta` z typu, dla korekty/transferu przełącznik +/−), **Produkty** (`StockProducts`, manager/admin — CRUD produktów + inline edycja `min_stock` per oddział przez upsert `branch_product_settings`) i **Dostawcy** (`StockSuppliers`, manager/admin — CRUD). Strona `/costs` (sidebar „Koszty" był już podlinkowany): zakres dat z presetami (ten tydzień/ten miesiąc/poprzedni miesiąc/30 dni) + ręczne pola, karty KPI (Przychód, Food/Beverage/Labor Cost % dla oddziału), przełącznik **Oddział / Cała sieć** dla org adminów (agregacja + tabela porównania oddziałów), rozbicie kosztów wg kategorii z prostymi paskami CSS (szerokość div = % przychodu), oraz zarządzanie wpisami kosztów (lista + `CostsEntryDialog` add/edit/delete dla managera). Bez biblioteki wykresów. Dzwoneczek: typ `stock_low` (ikona `PackageX`, deep-link `/stock`), payload z `name` produktu pokazywany w podglądzie.
 - **Zweryfikowano E2E (39/39 RLS/triggery/CHECK + 2/2 SSR) na lokalnym stacku + dev server:** A (owner+manager oddziału) tworzy produkt+dostawcę+`min_stock=5`; B (employee) nie tworzy produktu (RLS); B robi dostawę +10 → `stock_levels=10`, brak alertu; B zużycie −7 → `=3`, dokładnie jedno `stock_low` do A; kolejne −1 → `=2`, **brak** nowego alertu (bez spamu); dostawa +8 → `=10`, zużycie −9 → `=1`, **drugie** `stock_low` (ponowne przekroczenie); CHECK-i znaku (delivery>0, usage<0, delta≠0) odrzucone, korekta +2 przyjęta → `=3`; B nie zapisuje `stock_levels` (brak uprawnień), ruch UPDATE/DELETE odrzucony (niemutowalność), C (obca org) nie widzi produktów/ruchów/stanów i nie wstawia ruchu do cudzego oddziału. M9: zamknięcie raportu z utarg {1000,2000,0} → `revenue_entries` = 3000 (source `manager_report`); A dodaje koszt food=900 → Food Cost 30% policzalny; B (employee) nie CUD kosztów (RLS); C nic nie widzi; próba ponownej edycji zamkniętego raportu odrzucona, przychód pozostaje jednym wierszem 3000 (bez duplikacji). SSR `/stock` i `/costs` renderują 200 z treścią dla zalogowanego, 302 na `/auth/login` bez sesji.
+
+### Odstępstwa z fazy 6 (szlif: PWA, E2E, RLS-audit, RODO, wydajność — 2026-07-09)
+
+- **PWA przez `@vite-pwa/nuxt`.** Manifest (name „OZMO — system operacyjny dla sieci
+  lokali", `lang: pl`, `theme_color: #262626` = kolor `--primary`, ikony 192/512 + maskable),
+  service worker `registerType: autoUpdate`. Ikony to placeholdery „O" (biały pierścień na
+  ciemnym kwadracie) generowane skryptem Node przez `zlib` (bez zależności; brak narzędzi
+  SVG→PNG w środowisku) do `public/pwa-192x192.png`, `pwa-512x512.png`, `maskable-512x512.png`,
+  `apple-touch-icon.png`. **Supabase nigdy nie jest cache'owany** (`runtimeCaching` NetworkOnly
+  dla hostów supabase / `:54321`); precache tylko statyki. `devOptions.enabled: false`
+  (SW wyłączony w dev). Zweryfikowano: build generuje `manifest.webmanifest` + `sw.js` +
+  `workbox-*.js`.
+- **E2E: Playwright (chromium), `tests/e2e/`, skrypt `npm run test:e2e`.** `playwright.config.ts`
+  (baseURL `localhost:3000`, `webServer: npm run dev`, `workers: 1`, screenshoty/trace na
+  porażce, `globalSetup` = health-check lokalnego Supabase). Seeding przez `service_role`
+  (unikalne slugi/e-maile na przebieg → powtarzalność bez sprzątania); ścieżki feature'owe
+  napędzane UI. **8 testów, wszystkie PASS:** (1) rejestracja→onboarding→org→pulpit,
+  (2) oddział→zaproszenie→drugi użytkownik akceptuje→widzi oddział, (3) zadanie z szablonem→
+  powiadomienie przypisanego (badge)→toggle checklisty→komentarz z `@`, (4) czat grupowy
+  realtime między dwoma kontekstami, (5) raport menadżerski: blokada zamknięcia do 5/5 → zamknięcie,
+  (6) magazyn: dostawa+zużycie poniżej minimum → `stock_low`, (7) RODO guard ostatniego właściciela,
+  (8) RODO usunięcie konta (anonimizacja, brak logowania, treść zachowana).
+  - **Kluczowy wzorzec testów:** po twardej nawigacji trzeba poczekać na hydrację Nuxt
+    (`#__nuxt.__vue_app__`) — interakcja przed hydracją wywołuje natywny submit formularza.
+- **Błędy aplikacji wykryte i naprawione przez E2E (migracje 20260709200100/200200 + zmiany UI):**
+  1. **Embed `profiles(...)` z `branch_members`/`org_members` nie działał** („Could not find a
+     relationship … in the schema cache") — kolumny miały FK tylko do `auth.users` (nieeksponowane
+     przez PostgREST), więc listy członków/przypisań/autorów wracały puste. Fix: `20260709200100_profiles_embed_fk.sql`
+     dodaje FK `branch_members.user_id`/`org_members.user_id → public.profiles(id)` (1:1 z auth.users).
+  2. **Aktywny oddział nie ustawiał się przy pierwszym twardym wejściu na stronę branch-scoped**
+     — SSR pierwszego żądania zwracał pustą listę (brak sesji), `loaded=true` blokował kliencki
+     refetch. Fix: `BranchPicker` i `chat.vue` wymuszają kliencki reload gdy lista pusta
+     (`load(!list.length)` w `onMounted`).
+  3. **Insert `created_by`/`author_id` bywał `undefined` po twardym wejściu** — kliencki
+     `useSupabaseUser().value` to wtedy *claims* JWT (`.sub`, bez `.id`). Fix: `20260709200200_owner_defaults.sql`
+     ustawia `DEFAULT auth.uid()` na kolumnach własności (tasks, task_comments, day_notes,
+     manager_reports, cost_entries, revenue_entries, stock_movements, chat_messages, shifts,
+     checklist_templates). **Uwaga:** dla insertu pojedynczego wiersza supabase-js pomija klucz
+     `undefined` (default działa), ale dla **bulk insert** wysyła kolumnę jako `null` (default
+     pominięty) — dlatego `StockMovementForm` **nie wysyła już `created_by`** (polega na DEFAULT).
+  4. **`/settings` czytał/zapisywał profil z `id=undefined`** (ten sam claims-problem). Fix:
+     `settings.vue` używa `uid = user.value?.id ?? user.value?.sub`.
+- **Znane, świadome ograniczenie:** kliencki `useSupabaseUser().value.id` bywa `undefined`
+  bezpośrednio po twardym przeładowaniu (obiekt to claims JWT dopóki klient nie odświeży sesji).
+  W realnym użyciu strony osiąga się nawigacją SPA (po logowaniu `user` ma `.id`), więc nie
+  dotyka to zwykłych przepływów; mutacje własności są odporne dzięki `DEFAULT auth.uid()`,
+  a odczyty i tak są filtrowane RLS po `auth.uid()`. Realtime powiadomień (`user:{id}`) po
+  twardym reloadzie może użyć złego kanału, ale dzwoneczek i tak robi initial fetch z tabeli.
+- **Audyt RLS — werdykt: brak realnych luk, migracja naprawcza niepotrzebna** (pełny raport:
+  `docs/rls-audit.md`). 29/29 tabel z RLS deny-by-default; każda polityka opakowuje `auth.uid()`
+  w `(select …)`; `anon` bez dostępu do danych (tylko domyślne `TRIGGER/TRUNCATE/REFERENCES`
+  Supabase); funkcje `security definer` w `public` to triggery (niewywoływalne przez PostgREST)
+  + 2 celowe RPC (`create_organization`, `copy_week_shifts`) sprawdzające uprawnienia wewnętrznie;
+  `realtime.messages` z RLS; 0 bucketów Storage.
+- **RODO — strategia BAN + ANONIMIZACJA** (nie twardy DELETE), wymuszona topologią FK
+  (raport: `docs/rodo.md`): `profiles.id → auth.users ON DELETE CASCADE` (twardy delete skasowałby
+  anonimizowany profil) + autorstwo (`author_id`/`created_by`) z `ON DELETE NO ACTION` (twardy
+  delete odrzucany, dopóki jest jakakolwiek treść). Route `POST /api/account/delete`
+  (`service_role`): guard ostatniego właściciela org z innymi członkami (409, komunikat PL),
+  anonimizacja profilu, usunięcie `org_members`/`branch_members`/`availability`, ban +
+  anonimizacja e-maila w `auth.users` (Admin API). UI: `/settings` (zmiana imienia/telefonu/hasła,
+  „Usuń konto" z type-to-confirm „USUŃ") + link w menu użytkownika i menu mobilnym.
+- **Wydajność — 2 brakujące indeksy** (`20260709200000_phase6_indexes.sql`): `tasks(branch_id, status)`
+  (Kanban/lista), `notifications(user_id) where read_at is null` (nieprzeczytane). Pozostałe
+  z listy już istniały (`notifications(user_id, created_at DESC)`, `chat_messages(channel_id, created_at)`,
+  `stock_movements(branch_id, product_id, created_at DESC)`, `shifts(branch_id, starts_at)`) — nie
+  duplikowano. `nuxt build` czysty (bez red flagów; łączny bundle ~1.9 MB gzip). `db:types` po
+  reset generuje jedynie 2 nowe relacje do `profiles`.
+- **Weryfikacja:** `supabase db reset` (10 migracji, czysto) + `db restart kong` (znany quirk) +
+  `db:types` + `nuxt build` — wszystko OK; pełny E2E 8/8 PASS na świeżo zresetowanej bazie.
 
 ## 11. Konwencje
 

@@ -7,6 +7,9 @@ const { channels, unreadMap, loaded, loadChannels, refreshUnread, markRead } = u
 
 await loadOrg()
 await loadChannels()
+// Wymuś klienckie przeładowanie, gdy SSR pierwszego żądania zwrócił pustą listę
+// (brak sesji w SSR → `loaded=true` z pustą listą blokowałby kolejne `loadChannels()`).
+onMounted(() => loadChannels(!channels.value.length))
 watch(activeOrgId, () => loadChannels(true))
 
 const activeChannelId = ref<string | null>(null)

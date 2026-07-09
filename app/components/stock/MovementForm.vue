@@ -113,7 +113,8 @@ async function submitAll() {
     supplier_id: l.supplierId,
     doc_ref: l.docRef,
     note: l.note,
-    created_by: user.value!.id,
+    // created_by pochodzi z DEFAULT auth.uid() (bulk insert nie może polegać na
+    // pominięciu undefined jak insert pojedynczego wiersza).
   }))
   const { error } = await supabase.from('stock_movements').insert(rows)
   saving.value = false

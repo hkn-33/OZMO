@@ -4,7 +4,9 @@ import { Building2, ChevronsUpDown, Check } from '@lucide/vue'
 const { branches, activeBranch, activeBranchId, setActive, load } = useBranch()
 const { activeOrgId } = useOrg()
 
-onMounted(() => load())
+// Wymuś klienckie przeładowanie, gdy SSR pierwszego żądania zwrócił pustą listę
+// (brak sesji w SSR → `loaded=true` z pustymi oddziałami blokowałby kolejne `load()`).
+onMounted(() => load(!branches.value.length))
 // Przeładuj listę oddziałów po zmianie organizacji.
 watch(activeOrgId, () => load(true))
 </script>

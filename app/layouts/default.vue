@@ -13,6 +13,7 @@ import {
   Menu,
   LogOut,
   Check,
+  Settings,
 } from '@lucide/vue'
 
 type NavItem = {
@@ -109,6 +110,10 @@ async function logout() {
               </DropdownMenuItem>
             </template>
             <DropdownMenuSeparator />
+            <DropdownMenuItem @select="() => navigateTo('/settings')">
+              <Settings class="mr-2 size-4" />
+              Ustawienia
+            </DropdownMenuItem>
             <DropdownMenuItem @select="logout">
               <LogOut class="mr-2 size-4" />
               Wyloguj się
@@ -154,7 +159,16 @@ async function logout() {
               </NuxtLink>
             </nav>
             <Separator class="my-2" />
-            <div class="px-2">
+            <div class="space-y-1 px-2">
+              <NuxtLink
+                to="/settings"
+                class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                active-class="bg-accent text-accent-foreground"
+                @click="sheetOpen = false"
+              >
+                <Settings class="size-4" />
+                Ustawienia
+              </NuxtLink>
               <button
                 class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 @click="logout"
