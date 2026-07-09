@@ -1,0 +1,2 @@
+-- Seed data for OZMO local dev.
+-- Phase 1: no org-specific seed yet (orgs are created via app onboarding).
