@@ -2,7 +2,7 @@
 import { toast } from 'vue-sonner'
 import { Plus, Trash2 } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
-import { WEEKDAYS_FULL } from '~/lib/schedule'
+import { WEEKDAYS_FULL, WEEKDAYS_SHORT } from '~/lib/schedule'
 
 const props = defineProps<{
   orgId: string
@@ -58,18 +58,33 @@ const { data, refresh, pending } = await useAsyncData(
 const myRows = computed(() =>
   (data.value?.rows ?? []).filter((r) => r.user_id === user.value?.id),
 )
-const teamByUser = computed(() => {
-  const map: Record<string, AvailRow[]> = {}
-  for (const r of data.value?.rows ?? []) {
-    if (r.user_id === user.value?.id) continue
-    ;(map[r.user_id] ??= []).push(r)
-  }
-  return map
-})
 
 function hm(t: string) {
   return t.slice(0, 5)
 }
+
+/** Bucket rows into 7 weekday slots (0=Mon..6=Sun), sorted by start time. */
+function byWeekday(rows: AvailRow[]) {
+  const slots: AvailRow[][] = Array.from({ length: 7 }, () => [])
+  for (const r of rows) slots[r.weekday]?.push(r)
+  for (const s of slots) s.sort((a, b) => a.from_time.localeCompare(b.from_time))
+  return slots
+}
+
+// Team members (manager view): one row per branch member (excluding self), so
+// people with no declared availability are visible as fully-empty rows.
+const teamMembers = computed(() => {
+  const names = data.value?.names ?? {}
+  const rowsByUser: Record<string, AvailRow[]> = {}
+  for (const r of data.value?.rows ?? []) {
+    if (r.user_id === user.value?.id) continue
+    ;(rowsByUser[r.user_id] ??= []).push(r)
+  }
+  return Object.entries(names)
+    .filter(([uid]) => uid !== user.value?.id)
+    .map(([uid, name]) => ({ uid, name, slots: byWeekday(rowsByUser[uid] ?? []) }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
+})
 
 // Add form
 const form = reactive({ weekday: '0', from: '08:00', to: '16:00', note: '' })
@@ -170,23 +185,57 @@ async function remove(r: AvailRow) {
       </CardContent>
     </Card>
 
-    <!-- Dostępność zespołu (menadżer) -->
+    <!-- Dostępność zespołu (menadżer) — siatka: osoba × dzień tygodnia -->
     <Card v-if="canManage">
       <CardHeader>
         <CardTitle class="text-base">Dostępność zespołu</CardTitle>
-        <CardDescription>Zadeklarowana dostępność pozostałych pracowników.</CardDescription>
+        <CardDescription>
+          Zadeklarowana dostępność w rozbiciu na dni. Puste pola = brak dostępności.
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <p v-if="!Object.keys(teamByUser).length" class="text-sm text-muted-foreground">
-          Brak zadeklarowanej dostępności zespołu.
+        <p v-if="!teamMembers.length" class="text-sm text-muted-foreground">
+          Brak pracowników w tym oddziale.
         </p>
-        <div v-else class="space-y-4">
-          <div v-for="(rows, uid) in teamByUser" :key="uid">
-            <p class="mb-1.5 text-sm font-medium">{{ data?.names[uid] ?? 'Bez nazwy' }}</p>
-            <div class="flex flex-wrap gap-1.5">
-              <Badge v-for="r in rows" :key="r.id" variant="secondary" class="font-normal">
-                {{ WEEKDAYS_FULL[r.weekday] }} {{ hm(r.from_time) }}–{{ hm(r.to_time) }}
-              </Badge>
+        <div v-else class="overflow-x-auto">
+          <div class="min-w-[720px]">
+            <!-- Weekday header -->
+            <div class="grid grid-cols-[10rem_repeat(7,1fr)] gap-2 border-b pb-2">
+              <div />
+              <div
+                v-for="(d, i) in WEEKDAYS_SHORT"
+                :key="i"
+                class="text-center text-xs font-medium text-muted-foreground"
+              >
+                {{ d }}
+              </div>
+            </div>
+            <!-- Person rows -->
+            <div
+              v-for="m in teamMembers"
+              :key="m.uid"
+              class="grid grid-cols-[10rem_repeat(7,1fr)] items-stretch gap-2 border-b py-2 last:border-0"
+            >
+              <div class="truncate self-center pr-2 text-sm font-medium">{{ m.name }}</div>
+              <div
+                v-for="(slot, wd) in m.slots"
+                :key="wd"
+                class="min-h-9 rounded-md p-1"
+                :class="slot.length ? '' : 'bg-muted/40'"
+              >
+                <div v-if="slot.length" class="space-y-1">
+                  <span
+                    v-for="r in slot"
+                    :key="r.id"
+                    class="block rounded bg-secondary px-1.5 py-0.5 text-center text-[11px] tabular-nums text-secondary-foreground"
+                  >
+                    {{ hm(r.from_time) }}–{{ hm(r.to_time) }}
+                  </span>
+                </div>
+                <div v-else class="flex h-full min-h-7 items-center justify-center text-muted-foreground/30">
+                  ·
+                </div>
+              </div>
             </div>
           </div>
         </div>

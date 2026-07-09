@@ -264,3 +264,18 @@
     font-family: var(--font-heading);
   }
 }
+
+/* === schedule categorical (Wong) === */
+/* Colorblind-safe palette per the token contract: role/position color coding on
+   the work schedule (M5). Assignment is stable per stanowisko within a branch and
+   NEVER carries a second meaning (draft/published stays orthogonal). Tints on cards
+   are computed with color-mix against --card so they adapt to light/dark; text stays
+   the foreground color (never white-on-cat unless AA passes). */
+:root,
+.dark {
+  --cat-1: #0072b2; /* niebieski */
+  --cat-2: #e69f00; /* pomarańczowy */
+  --cat-3: #009e73; /* morski */
+  --cat-4: #cc79a7; /* różowo-fioletowy */
+  --cat-5: #d55e00; /* cynober */
+}

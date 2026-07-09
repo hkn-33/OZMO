@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import {
-  ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Copy, Send, CalendarDays,
+  ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Copy, Send, CalendarDays, TriangleAlert,
 } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 import { zonedTimeToIso, tzDateKey, tzTime } from '~/lib/tz'
-import { WEEKDAYS_FULL, weekdayIndex } from '~/lib/schedule'
+import {
+  WEEKDAYS_FULL, weekdayIndex, buildPositionColors, positionColor, shiftCardStyle,
+} from '~/lib/schedule'
 import type {
   ScheduleMember, ShiftTemplateLite, AvailabilityLite, EditingShift,
 } from '~/components/schedule/ShiftDialog.vue'
@@ -137,13 +139,36 @@ const shiftsByDay = computed(() => {
 const dayCounts = computed(() =>
   Object.fromEntries(days.value.map((d) => [d.key, (shiftsByDay.value[d.key] ?? []).length])),
 )
-function templateNeeded(dayIndex: number) {
+
+// Per-day staffing hint from shift_templates: scheduled vs needed (amber when under).
+function staffing(dayIndex: number, dayKey: string) {
   const forDay = (data.value?.templates ?? []).filter((t) => t.weekday === dayIndex)
   if (!forDay.length) return null
-  return forDay.reduce((s, t) => s + (t.needed ?? 0), 0)
+  const needed = forDay.reduce((s, t) => s + (t.needed ?? 0), 0)
+  const scheduled = dayCounts.value[dayKey] ?? 0
+  return { needed, scheduled, under: scheduled < needed }
 }
 
 const hasDrafts = computed(() => (data.value?.shifts ?? []).some((s) => !s.published))
+
+// Today highlight (branch-local calendar day).
+const todayKey = tzDateKey(new Date().toISOString(), props.timezone)
+
+// --- Role/position color coding (stable per position within the branch) ---
+const positionColors = computed(() =>
+  buildPositionColors((data.value?.shifts ?? []).map((s) => s.position)),
+)
+function shiftColor(position: string | null) {
+  return positionColor(positionColors.value, position)
+}
+// Legend: distinct positions present in the visible week (auto-derived) + a neutral
+// entry when some shifts have no position.
+const legendPositions = computed(() =>
+  [...positionColors.value.entries()].map(([name, color]) => ({ name, color })),
+)
+const hasUnpositioned = computed(() =>
+  (data.value?.shifts ?? []).some((s) => !s.position?.trim()),
+)
 
 // --- Dialog ---
 const dialogOpen = ref(false)
@@ -222,19 +247,21 @@ async function copyPrevWeek() {
 
 <template>
   <div class="space-y-4">
-    <!-- Toolbar -->
-    <div class="flex flex-wrap items-center justify-between gap-3">
+    <!-- Toolbar (sticky week nav on mobile) -->
+    <div
+      class="sticky top-0 z-20 -mx-1 flex flex-wrap items-center justify-between gap-3 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none"
+    >
       <div class="flex items-center gap-1">
-        <Button variant="outline" size="icon" @click="prevWeek">
+        <Button variant="outline" size="icon" aria-label="Poprzedni tydzień" @click="prevWeek">
           <ChevronLeft class="size-4" />
         </Button>
         <Button variant="outline" size="sm" @click="today">
           <CalendarDays class="mr-1.5 size-4" /> Dziś
         </Button>
-        <Button variant="outline" size="icon" @click="nextWeek">
+        <Button variant="outline" size="icon" aria-label="Następny tydzień" @click="nextWeek">
           <ChevronRight class="size-4" />
         </Button>
-        <span class="ml-2 text-sm font-medium">{{ weekLabel }}</span>
+        <span class="ml-2 text-sm font-semibold tabular-nums">{{ weekLabel }}</span>
       </div>
       <div v-if="canManage" class="flex flex-wrap items-center gap-2">
         <Button variant="outline" size="sm" :disabled="copying" @click="copyPrevWeek">
@@ -248,86 +275,160 @@ async function copyPrevWeek() {
 
     <p v-if="pending" class="py-6 text-sm text-muted-foreground">Ładowanie…</p>
 
-    <!-- Week grid: 7 columns on desktop, day list on mobile -->
-    <div v-else class="grid gap-3 lg:grid-cols-7">
+    <template v-else>
+      <!-- Legend: role colors present this week + draft/published key for managers -->
       <div
-        v-for="(day, i) in days"
-        :key="day.key"
-        class="rounded-lg border bg-card p-2"
+        class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-3 py-2 text-xs"
       >
-        <div class="mb-2 flex items-center justify-between gap-2 px-1">
-          <div>
-            <p class="text-sm font-semibold leading-tight">{{ day.label }}</p>
-            <p class="text-xs text-muted-foreground">
-              {{ new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short' }).format(day.date) }}
-            </p>
-          </div>
-          <Button
-            v-if="canManage"
-            variant="ghost"
-            size="icon"
-            class="size-7 shrink-0"
-            @click="openAdd(day.key)"
+        <span class="font-medium text-muted-foreground">Stanowiska:</span>
+        <template v-if="legendPositions.length || hasUnpositioned">
+          <span
+            v-for="p in legendPositions"
+            :key="p.name"
+            class="inline-flex items-center gap-1.5"
           >
-            <Plus class="size-4" />
-          </Button>
-        </div>
+            <span class="size-2.5 rounded-full" :style="{ backgroundColor: p.color }" />
+            <span>{{ p.name }}</span>
+          </span>
+          <span v-if="hasUnpositioned" class="inline-flex items-center gap-1.5">
+            <span class="size-2.5 rounded-full bg-muted-foreground/40" />
+            <span>Bez stanowiska</span>
+          </span>
+        </template>
+        <span v-else class="text-muted-foreground">Brak zmian w tym tygodniu</span>
 
-        <p
-          v-if="templateNeeded(i) != null"
-          class="mb-2 rounded bg-muted px-2 py-1 text-[11px] text-muted-foreground"
+        <template v-if="canManage">
+          <span class="mx-1 hidden h-3.5 w-px bg-border sm:block" />
+          <span class="inline-flex items-center gap-1.5">
+            <span class="h-3.5 w-5 rounded-sm border-2 border-dashed border-muted-foreground/50 opacity-60" />
+            <span>Szkic</span>
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="h-3.5 w-5 rounded-sm border border-border bg-card" />
+            <span>Opublikowane</span>
+          </span>
+        </template>
+      </div>
+
+      <!-- Week grid: 7 columns on desktop, day list on mobile -->
+      <div class="grid gap-3 lg:grid-cols-7">
+        <div
+          v-for="(day, i) in days"
+          :key="day.key"
+          class="rounded-lg border p-2"
+          :class="day.key === todayKey ? 'bg-card ring-1 ring-primary/40' : 'bg-card'"
         >
-          Obsada wg szablonu: {{ templateNeeded(i) }}, zaplanowane: {{ dayCounts[day.key] ?? 0 }}
-        </p>
-
-        <div class="space-y-2">
-          <p
-            v-if="!(shiftsByDay[day.key]?.length)"
-            class="px-1 py-2 text-xs text-muted-foreground/70"
-          >
-            Brak zmian
-          </p>
+          <!-- Day header: weekday + date; today gets a tinted header -->
           <div
-            v-for="s in shiftsByDay[day.key] ?? []"
-            :key="s.id"
-            class="rounded-md border p-2 text-sm"
-            :class="[
-              s.published ? 'bg-card' : 'border-dashed bg-muted/40',
-              s.user_id === user?.id ? 'ring-1 ring-primary/40' : '',
-            ]"
+            class="mb-2 flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
+            :class="day.key === todayKey ? 'bg-primary/10' : ''"
           >
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0">
-                <p class="truncate font-medium">{{ nameById[s.user_id] ?? 'Bez nazwy' }}</p>
-                <p class="text-xs text-muted-foreground">
-                  {{ tzTime(s.starts_at, timezone) }}–{{ tzTime(s.ends_at, timezone) }}
-                </p>
+            <div>
+              <p
+                class="text-sm font-semibold leading-tight"
+                :class="day.key === todayKey ? 'text-primary' : ''"
+              >
+                {{ day.label }}
+              </p>
+              <p class="text-xs text-muted-foreground tabular-nums">
+                {{ new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short' }).format(day.date) }}
+              </p>
+            </div>
+            <Button
+              v-if="canManage && shiftsByDay[day.key]?.length"
+              variant="ghost"
+              size="icon"
+              class="size-8 shrink-0"
+              aria-label="Dodaj zmianę"
+              @click="openAdd(day.key)"
+            >
+              <Plus class="size-4" />
+            </Button>
+          </div>
+
+          <!-- Staffing hint from templates -->
+          <p
+            v-if="staffing(i, day.key)"
+            class="mb-2 inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-medium"
+            :class="staffing(i, day.key)!.under
+              ? 'bg-warning-soft text-warning-soft-foreground'
+              : 'bg-muted text-muted-foreground'"
+          >
+            <TriangleAlert v-if="staffing(i, day.key)!.under" class="size-3" />
+            {{ staffing(i, day.key)!.scheduled }}/{{ staffing(i, day.key)!.needed }} obsadzone
+          </p>
+
+          <div class="space-y-2">
+            <!-- Shift cards -->
+            <div
+              v-for="s in shiftsByDay[day.key] ?? []"
+              :key="s.id"
+              class="min-h-[44px] rounded-md border border-l-[3px] p-2"
+              :style="shiftCardStyle(shiftColor(s.position))"
+              :class="[
+                !s.published ? 'border-dashed opacity-60' : '',
+                s.user_id === user?.id ? 'ring-1 ring-primary/50' : '',
+              ]"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-medium leading-tight">
+                    {{ nameById[s.user_id] ?? 'Bez nazwy' }}
+                  </p>
+                  <p class="mt-0.5 text-sm font-semibold tabular-nums leading-tight">
+                    {{ tzTime(s.starts_at, timezone) }}–{{ tzTime(s.ends_at, timezone) }}
+                  </p>
+                </div>
+                <div v-if="canManage" class="flex shrink-0 gap-0.5">
+                  <Button variant="ghost" size="icon" class="size-8" aria-label="Edytuj" @click="openEdit(s)">
+                    <Pencil class="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="size-8 text-destructive"
+                    aria-label="Usuń"
+                    @click="removeShift(s)"
+                  >
+                    <Trash2 class="size-3.5" />
+                  </Button>
+                </div>
               </div>
-              <div v-if="canManage" class="flex shrink-0 gap-0.5">
-                <Button variant="ghost" size="icon" class="size-7" @click="openEdit(s)">
-                  <Pencil class="size-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="size-7 text-destructive"
-                  @click="removeShift(s)"
+              <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <span
+                  v-if="s.position"
+                  class="inline-flex items-center gap-1 text-[11px] font-medium text-foreground/80"
                 >
-                  <Trash2 class="size-3.5" />
-                </Button>
+                  <span
+                    class="size-1.5 rounded-full"
+                    :style="{ backgroundColor: shiftColor(s.position) ?? 'var(--border)' }"
+                  />
+                  {{ s.position }}
+                </span>
+                <Badge v-if="!s.published" variant="outline" class="text-[10px]">Szkic</Badge>
               </div>
+              <p v-if="s.note" class="mt-1 text-xs text-muted-foreground">{{ s.note }}</p>
             </div>
-            <div class="mt-1 flex flex-wrap items-center gap-1">
-              <Badge v-if="s.position" variant="secondary" class="text-[10px]">
-                {{ s.position }}
-              </Badge>
-              <Badge v-if="!s.published" variant="outline" class="text-[10px]">Szkic</Badge>
-            </div>
-            <p v-if="s.note" class="mt-1 text-xs text-muted-foreground">{{ s.note }}</p>
+
+            <!-- Empty day: quiet add affordance for managers, else muted note -->
+            <button
+              v-if="canManage && !(shiftsByDay[day.key]?.length)"
+              type="button"
+              class="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-md border border-dashed text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              @click="openAdd(day.key)"
+            >
+              <Plus class="size-3.5" /> Dodaj zmianę
+            </button>
+            <p
+              v-else-if="!(shiftsByDay[day.key]?.length)"
+              class="px-1 py-2 text-xs text-muted-foreground/70"
+            >
+              Brak zmian
+            </p>
           </div>
         </div>
       </div>
-    </div>
+    </template>
 
     <ScheduleShiftDialog
       v-model:open="dialogOpen"
