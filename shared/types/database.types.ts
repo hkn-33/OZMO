@@ -34,6 +34,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      availability: {
+        Row: {
+          branch_id: string
+          from_time: string
+          id: string
+          note: string | null
+          org_id: string
+          to_time: string
+          user_id: string
+          weekday: number
+        }
+        Insert: {
+          branch_id: string
+          from_time: string
+          id?: string
+          note?: string | null
+          org_id: string
+          to_time: string
+          user_id: string
+          weekday: number
+        }
+        Update: {
+          branch_id?: string
+          from_time?: string
+          id?: string
+          note?: string | null
+          org_id?: string
+          to_time?: string
+          user_id?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_members: {
         Row: {
           branch_id: string
@@ -591,6 +639,111 @@ export type Database = {
         }
         Relationships: []
       }
+      shift_templates: {
+        Row: {
+          branch_id: string
+          from_time: string
+          id: string
+          needed: number
+          org_id: string
+          position: string | null
+          to_time: string
+          weekday: number
+        }
+        Insert: {
+          branch_id: string
+          from_time: string
+          id?: string
+          needed?: number
+          org_id: string
+          position?: string | null
+          to_time: string
+          weekday: number
+        }
+        Update: {
+          branch_id?: string
+          from_time?: string
+          id?: string
+          needed?: number
+          org_id?: string
+          position?: string | null
+          to_time?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_templates_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shifts: {
+        Row: {
+          branch_id: string
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          id: string
+          note: string | null
+          org_id: string
+          position: string | null
+          published: boolean
+          starts_at: string
+          user_id: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          created_by?: string | null
+          ends_at: string
+          id?: string
+          note?: string | null
+          org_id: string
+          position?: string | null
+          published?: boolean
+          starts_at: string
+          user_id: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          id?: string
+          note?: string | null
+          org_id?: string
+          position?: string | null
+          published?: boolean
+          starts_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shifts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shifts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_assignees: {
         Row: {
           created_at: string
@@ -775,6 +928,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      copy_week_shifts: {
+        Args: {
+          from_week_start: string
+          p_branch_id: string
+          to_week_start: string
+        }
+        Returns: number
+      }
       create_organization: {
         Args: { _name: string; _slug: string }
         Returns: {
@@ -802,6 +963,7 @@ export type Database = {
         | "mentioned"
         | "comment_on_my_task"
         | "task_due_soon"
+        | "shift_published"
       org_role: "owner" | "admin" | "member"
       report_section: "utarg" | "kasa" | "sanepid" | "magazyn" | "zmiana"
       task_priority: "low" | "normal" | "high" | "urgent"
@@ -945,6 +1107,7 @@ export const Constants = {
         "mentioned",
         "comment_on_my_task",
         "task_due_soon",
+        "shift_published",
       ],
       org_role: ["owner", "admin", "member"],
       report_section: ["utarg", "kasa", "sanepid", "magazyn", "zmiana"],

@@ -14,6 +14,10 @@ export interface NotificationRow {
     title?: string
     author_id?: string
     branch_id?: string
+    shift_id?: string
+    starts_at?: string
+    ends_at?: string
+    position?: string
   }
   created_at: string
   read_at: string | null

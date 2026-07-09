@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Building2 } from '@lucide/vue'
+import { Building2, CalendarClock } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
+import { tzTime } from '~/lib/tz'
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
@@ -33,6 +34,42 @@ const { data: myBranches } = await useAsyncData(
   },
   { watch: [activeOrgId] },
 )
+
+type NextShift = {
+  id: string
+  starts_at: string
+  ends_at: string
+  position: string | null
+  branches: { name: string; timezone: string } | null
+}
+
+const { data: nextShift } = await useAsyncData(
+  () => `next-shift:${user.value?.id}`,
+  async () => {
+    if (!user.value?.id) return null
+    const { data } = await supabase
+      .from('shifts')
+      .select('id, starts_at, ends_at, position, branches(name, timezone)')
+      .eq('user_id', user.value.id)
+      .eq('published', true)
+      .gte('starts_at', new Date().toISOString())
+      .order('starts_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    return (data ?? null) as unknown as NextShift | null
+  },
+  { watch: [user] },
+)
+
+const nextShiftLabel = computed(() => {
+  const s = nextShift.value
+  if (!s) return null
+  const tz = s.branches?.timezone ?? 'Europe/Warsaw'
+  const day = new Intl.DateTimeFormat('pl-PL', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: tz,
+  }).format(new Date(s.starts_at))
+  return `${day}, ${tzTime(s.starts_at, tz)}–${tzTime(s.ends_at, tz)}`
+})
 </script>
 
 <template>
@@ -46,6 +83,21 @@ const { data: myBranches } = await useAsyncData(
         <span v-if="role">Twoja rola: {{ roleLabels[role] }}.</span>
       </p>
     </div>
+
+    <NuxtLink v-if="nextShiftLabel" to="/schedule" class="block">
+      <Card class="transition-colors hover:bg-accent">
+        <CardHeader class="pb-3">
+          <CardTitle class="flex items-center gap-2 text-base">
+            <CalendarClock class="size-4" /> Twoja najbliższa zmiana
+          </CardTitle>
+          <CardDescription class="text-foreground">
+            {{ nextShiftLabel }}
+            <template v-if="nextShift?.position"> · {{ nextShift.position }}</template>
+            <template v-if="nextShift?.branches?.name"> · {{ nextShift.branches.name }}</template>
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    </NuxtLink>
 
     <div>
       <h2 class="mb-3 text-lg font-semibold">Moje oddziały</h2>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bell, CheckCheck, UserPlus, AtSign, MessageSquare, Clock } from '@lucide/vue'
+import { Bell, CheckCheck, UserPlus, AtSign, MessageSquare, Clock, CalendarDays } from '@lucide/vue'
 import type { Component } from 'vue'
 import { formatRelative } from '~/lib/utils'
 import type { NotificationRow, NotificationType } from '~/composables/useNotifications'
@@ -19,18 +19,22 @@ const typeIcon: Record<NotificationType, Component> = {
   mentioned: AtSign,
   comment_on_my_task: MessageSquare,
   task_due_soon: Clock,
+  shift_published: CalendarDays,
 }
 const typeLabel: Record<NotificationType, string> = {
   task_assigned: 'Przypisano Ci zadanie',
   mentioned: 'Wspomniano o Tobie',
   comment_on_my_task: 'Nowy komentarz do zadania',
   task_due_soon: 'Zbliża się termin zadania',
+  shift_published: 'Opublikowano Twój grafik',
 }
 
 async function openNotification(n: NotificationRow) {
   if (!n.read_at) await markRead(n.id)
   open.value = false
-  if (n.payload?.task_id) {
+  if (n.type === 'shift_published') {
+    await navigateTo('/schedule')
+  } else if (n.payload?.task_id) {
     await navigateTo({ path: '/tasks', query: { task: n.payload.task_id } })
   }
 }
