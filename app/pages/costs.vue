@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Plus, Pencil, Trash2, Network, Store } from '@lucide/vue'
+import { Plus, Pencil, Trash2, Network, Store, Tags } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import type { Database } from '~~/shared/types/database.types'
 import { formatDate } from '~/lib/utils'
 
-type CostCategory = Database['public']['Enums']['cost_category']
 type BranchRole = Database['public']['Enums']['branch_role']
 
 const supabase = useSupabaseClient<Database>()
@@ -16,16 +15,26 @@ await loadOrg()
 await loadBranch()
 watch(activeOrgId, () => loadBranch(true))
 
-const CATEGORIES: { value: CostCategory; label: string }[] = [
-  { value: 'food', label: 'Żywność' },
-  { value: 'beverage', label: 'Napoje' },
-  { value: 'labor', label: 'Praca' },
-  { value: 'other', label: 'Inne' },
-]
-const catLabel = (c: CostCategory) => CATEGORIES.find((x) => x.value === c)?.label ?? c
-
 const money = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 })
 const pct = (part: number, total: number) => (total > 0 ? Math.round((part / total) * 1000) / 10 : 0)
+
+// ---- Cost categories (per org) ----
+interface Category { id: string; name: string; sort: number }
+const { data: categoriesData, refresh: refreshCats } = await useAsyncData(
+  () => `cost-cats:${activeOrgId.value}`,
+  async () => {
+    if (!activeOrgId.value) return [] as Category[]
+    const { data } = await supabase
+      .from('cost_categories')
+      .select('id, name, sort')
+      .eq('org_id', activeOrgId.value)
+      .order('sort')
+    return (data ?? []) as Category[]
+  },
+  { watch: [activeOrgId] },
+)
+const catList = computed(() => categoriesData.value ?? [])
+const catName = (id: string) => catList.value.find((c) => c.id === id)?.name ?? '—'
 
 // ---- Date range ----
 function localDate(d: Date) {
@@ -97,7 +106,7 @@ const canManage = computed(() => isAdmin.value || role.value === 'manager')
 
 // ---- Data ----
 interface RevRow { branch_id: string; amount: number }
-interface CostRow { id: string; branch_id: string; date: string; category: CostCategory; amount: number; note: string | null }
+interface CostRow { id: string; branch_id: string; date: string; category_id: string; amount: number; note: string | null }
 
 const { data, pending, refresh } = await useAsyncData(
   () => `costs:${scope.value}:${from.value}:${to.value}:${scopeBranchIds.value.join(',')}`,
@@ -106,7 +115,7 @@ const { data, pending, refresh } = await useAsyncData(
     if (!ids.length) return { revenue: [] as RevRow[], costs: [] as CostRow[] }
     const [rev, cost] = await Promise.all([
       supabase.from('revenue_entries').select('branch_id, amount').in('branch_id', ids).gte('date', from.value).lte('date', to.value),
-      supabase.from('cost_entries').select('id, branch_id, date, category, amount, note').in('branch_id', ids).gte('date', from.value).lte('date', to.value).order('date', { ascending: false }),
+      supabase.from('cost_entries').select('id, branch_id, date, category_id, amount, note').in('branch_id', ids).gte('date', from.value).lte('date', to.value).order('date', { ascending: false }),
     ])
     return {
       revenue: (rev.data ?? []).map((r) => ({ branch_id: r.branch_id, amount: Number(r.amount) })),
@@ -118,18 +127,19 @@ const { data, pending, refresh } = await useAsyncData(
 
 const revenueTotal = computed(() => (data.value?.revenue ?? []).reduce((s, r) => s + r.amount, 0))
 const costByCat = computed(() => {
-  const m: Record<CostCategory, number> = { food: 0, beverage: 0, labor: 0, other: 0 }
-  for (const c of data.value?.costs ?? []) m[c.category] += c.amount
+  const m: Record<string, number> = {}
+  for (const cat of catList.value) m[cat.id] = 0
+  for (const c of data.value?.costs ?? []) m[c.category_id] = (m[c.category_id] ?? 0) + c.amount
   return m
 })
-const costTotal = computed(() => Object.values(costByCat.value).reduce((s, v) => s + v, 0))
+const costTotal = computed(() => (data.value?.costs ?? []).reduce((s, c) => s + c.amount, 0))
 
-// per-branch comparison (network)
-interface BranchAgg { branch_id: string; name: string; revenue: number; food: number; beverage: number; labor: number; other: number }
+// per-branch comparison (network) — dynamic categories
+interface BranchAgg { branch_id: string; name: string; revenue: number; cost: number; costs: Record<string, number> }
 const perBranch = computed<BranchAgg[]>(() => {
   const map = new Map<string, BranchAgg>()
   for (const b of branches.value) {
-    map.set(b.id, { branch_id: b.id, name: b.name, revenue: 0, food: 0, beverage: 0, labor: 0, other: 0 })
+    map.set(b.id, { branch_id: b.id, name: b.name, revenue: 0, cost: 0, costs: {} })
   }
   for (const r of data.value?.revenue ?? []) {
     const a = map.get(r.branch_id)
@@ -137,16 +147,22 @@ const perBranch = computed<BranchAgg[]>(() => {
   }
   for (const c of data.value?.costs ?? []) {
     const a = map.get(c.branch_id)
-    if (a) a[c.category] += c.amount
+    if (a) {
+      a.costs[c.category_id] = (a.costs[c.category_id] ?? 0) + c.amount
+      a.cost += c.amount
+    }
   }
   return [...map.values()].filter((a) => scopeBranchIds.value.includes(a.branch_id))
 })
 
 const kpis = computed(() => [
-  { label: 'Przychód', value: money.format(revenueTotal.value), sub: null },
-  { label: 'Food Cost', value: `${pct(costByCat.value.food, revenueTotal.value)}%`, sub: money.format(costByCat.value.food) },
-  { label: 'Beverage Cost', value: `${pct(costByCat.value.beverage, revenueTotal.value)}%`, sub: money.format(costByCat.value.beverage) },
-  { label: 'Labor Cost', value: `${pct(costByCat.value.labor, revenueTotal.value)}%`, sub: money.format(costByCat.value.labor) },
+  { label: 'Przychód', value: money.format(revenueTotal.value), sub: null as string | null },
+  ...catList.value.map((cat) => ({
+    label: cat.name,
+    value: `${pct(costByCat.value[cat.id] ?? 0, revenueTotal.value)}%`,
+    sub: money.format(costByCat.value[cat.id] ?? 0),
+  })),
+  { label: 'Koszty razem', value: `${pct(costTotal.value, revenueTotal.value)}%`, sub: money.format(costTotal.value) },
 ])
 
 // cost entry management (single branch)
@@ -169,6 +185,13 @@ async function removeEntry(c: CostRow) {
   toast.success('Usunięto koszt')
   await refresh()
 }
+
+// category management (org admins)
+const catMgrOpen = ref(false)
+async function onCategoriesChanged() {
+  await refreshCats()
+  await refresh()
+}
 </script>
 
 <template>
@@ -180,21 +203,26 @@ async function removeEntry(c: CostRow) {
           {{ scope === 'network' ? 'Cała sieć' : (activeBranch?.name ?? 'Wybierz oddział') }}
         </p>
       </div>
-      <div v-if="isAdmin" class="flex rounded-md border p-0.5 text-sm">
-        <button
-          class="flex items-center gap-1.5 rounded px-3 py-1.5"
-          :class="scope === 'branch' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
-          @click="scope = 'branch'"
-        >
-          <Store class="size-4" /> Oddział
-        </button>
-        <button
-          class="flex items-center gap-1.5 rounded px-3 py-1.5"
-          :class="scope === 'network' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
-          @click="scope = 'network'"
-        >
-          <Network class="size-4" /> Cała sieć
-        </button>
+      <div class="flex items-center gap-2">
+        <Button v-if="isAdmin" size="sm" variant="outline" @click="catMgrOpen = true">
+          <Tags class="mr-1.5 size-4" /> Kategorie kosztów
+        </Button>
+        <div v-if="isAdmin" class="flex rounded-md border p-0.5 text-sm">
+          <button
+            class="flex items-center gap-1.5 rounded px-3 py-1.5"
+            :class="scope === 'branch' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
+            @click="scope = 'branch'"
+          >
+            <Store class="size-4" /> Oddział
+          </button>
+          <button
+            class="flex items-center gap-1.5 rounded px-3 py-1.5"
+            :class="scope === 'network' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
+            @click="scope = 'network'"
+          >
+            <Network class="size-4" /> Cała sieć
+          </button>
+        </div>
       </div>
     </div>
 
@@ -246,17 +274,21 @@ async function removeEntry(c: CostRow) {
           <CardDescription>Udział w przychodzie: {{ money.format(revenueTotal) }}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-3">
-          <div v-for="c in CATEGORIES" :key="c.value" class="space-y-1">
+          <p v-if="!catList.length" class="text-sm text-muted-foreground">
+            Brak kategorii kosztów.
+            <button v-if="isAdmin" class="text-primary underline" @click="catMgrOpen = true">Dodaj kategorie</button>
+          </p>
+          <div v-for="c in catList" :key="c.id" class="space-y-1">
             <div class="flex items-center justify-between text-sm">
-              <span>{{ c.label }}</span>
+              <span>{{ c.name }}</span>
               <span class="tabular-nums text-muted-foreground">
-                {{ money.format(costByCat[c.value]) }} · {{ pct(costByCat[c.value], revenueTotal) }}%
+                {{ money.format(costByCat[c.id] ?? 0) }} · {{ pct(costByCat[c.id] ?? 0, revenueTotal) }}%
               </span>
             </div>
             <div class="h-2 overflow-hidden rounded-full bg-muted">
               <div
                 class="h-full rounded-full bg-primary"
-                :style="{ width: Math.min(pct(costByCat[c.value], revenueTotal), 100) + '%' }"
+                :style="{ width: Math.min(pct(costByCat[c.id] ?? 0, revenueTotal), 100) + '%' }"
               />
             </div>
           </div>
@@ -279,18 +311,18 @@ async function removeEntry(c: CostRow) {
                 <TableRow>
                   <TableHead>Oddział</TableHead>
                   <TableHead class="text-right">Przychód</TableHead>
-                  <TableHead class="text-right">Food</TableHead>
-                  <TableHead class="text-right">Beverage</TableHead>
-                  <TableHead class="text-right">Labor</TableHead>
+                  <TableHead v-for="c in catList" :key="c.id" class="text-right whitespace-nowrap">{{ c.name }}</TableHead>
+                  <TableHead class="text-right">Koszty razem</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow v-for="b in perBranch" :key="b.branch_id">
                   <TableCell class="font-medium">{{ b.name }}</TableCell>
                   <TableCell class="text-right tabular-nums">{{ money.format(b.revenue) }}</TableCell>
-                  <TableCell class="text-right tabular-nums">{{ pct(b.food, b.revenue) }}%</TableCell>
-                  <TableCell class="text-right tabular-nums">{{ pct(b.beverage, b.revenue) }}%</TableCell>
-                  <TableCell class="text-right tabular-nums">{{ pct(b.labor, b.revenue) }}%</TableCell>
+                  <TableCell v-for="c in catList" :key="c.id" class="text-right tabular-nums">
+                    {{ pct(b.costs[c.id] ?? 0, b.revenue) }}%
+                  </TableCell>
+                  <TableCell class="text-right tabular-nums font-medium">{{ pct(b.cost, b.revenue) }}%</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -327,7 +359,7 @@ async function removeEntry(c: CostRow) {
               <TableBody>
                 <TableRow v-for="c in data.costs" :key="c.id">
                   <TableCell class="whitespace-nowrap">{{ formatDate(c.date) }}</TableCell>
-                  <TableCell><Badge variant="outline">{{ catLabel(c.category) }}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{{ catName(c.category_id) }}</Badge></TableCell>
                   <TableCell class="hidden max-w-[16rem] truncate text-muted-foreground sm:table-cell">
                     {{ c.note ?? '—' }}
                   </TableCell>
@@ -352,9 +384,17 @@ async function removeEntry(c: CostRow) {
         v-model:open="dialogOpen"
         :org-id="activeOrgId"
         :branch-id="activeBranchId"
+        :categories="catList"
         :editing="editing"
         :default-date="to"
         @saved="refresh"
+      />
+
+      <CostsCategoryManager
+        v-if="activeOrgId && isAdmin"
+        v-model:open="catMgrOpen"
+        :org-id="activeOrgId"
+        @changed="onCategoriesChanged"
       />
     </template>
   </div>

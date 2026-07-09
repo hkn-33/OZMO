@@ -6,7 +6,7 @@ test('landing page renders for anonymous visitors with pricing', async ({ page }
 
   await expect(
     page.getByRole('heading', {
-      name: /System operacyjny dla sieci restauracji i hoteli/,
+      name: /System do zarządzania firmą wielooddziałową/,
     }),
   ).toBeVisible()
 

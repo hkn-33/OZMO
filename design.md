@@ -1,6 +1,6 @@
 # OZMO — Design Document
 
-> System operacyjny dla sieci lokali (restauracje, hotele). Zastępuje Excela, WhatsAppa, papierowe checklisty i rozproszone narzędzia jednym systemem.
+> System do zarządzania firmą wielooddziałową (dowolna branża: kawiarnia, restauracja, hotel, magazyn, hurtownia, sklep…). Zastępuje Excela, WhatsAppa, papierowe checklisty i rozproszone narzędzia jednym systemem. Nic branżowego nie jest zaszyte na sztywno — branżę wybiera się przy zakładaniu firmy, a treści (checklisty, kategorie kosztów, sekcje raportu) są konfigurowalne.
 >
 > **Ten dokument jest źródłem prawdy.** Każda zmiana architektury lub zakresu musi być najpierw odnotowana tutaj.
 
@@ -124,9 +124,10 @@ invitations     (id, org_id, branch_id?, email, role, token, expires_at, accepte
 - „Automatyka" w MVP = podpowiedzi z szablonu obsady + dostępności (bez AI). Optymalizacja — faza 2.
 
 ### M6. Raport dzienny menadżerski
-- Tabele: `manager_reports` (branch_id, date, status: draft|closed, closed_by, closed_at), `manager_report_sections` (report_id, section: utarg|kasa|sanepid|magazyn|zmiana, data jsonb, completed bool).
-- **Blokada zamknięcia**: `status='closed'` możliwy tylko gdy wszystkie sekcje `completed` — CHECK przez trigger.
-- Rozwijana checklista sekcji; utarg/kasa jako pola liczbowe → zasilają moduł kosztów.
+- Tabele: `manager_reports` (branch_id, date, status: draft|closed, closed_by, closed_at), `manager_report_sections` (report_id, **section_def_id** → `report_section_defs`, data jsonb, completed bool).
+- **Konfigurowalne sekcje** (faza 9): `report_section_defs` (org_id, name, sort, fields jsonb `[{key,label,type: money|number|text|boolean}]`, required, **is_revenue_source**) — org admin zarządza w ustawieniach. Sekcje raportu tworzone automatycznie z defów przy zakładaniu raportu.
+- **Blokada zamknięcia**: `status='closed'` możliwy tylko gdy wszystkie **wymagane** (required) sekcje `completed` — trigger.
+- Przychód → moduł kosztów: suma pól typu `money` z sekcji oznaczonej `is_revenue_source`.
 
 ### M7. Zarządzanie zespołem
 - CRUD członków, zaproszenia mailem (server route + service_role), zmiana ról, przypisywanie do lokali, dezaktywacja.
@@ -139,9 +140,17 @@ invitations     (id, org_id, branch_id?, email, role, token, expires_at, accepte
 - Alert: stan < minimum → powiadomienie do menadżera.
 
 ### M9. Kontrola kosztów
-- Tabele: `revenue_entries` (branch_id, date, amount — zasilane z raportu menadżerskiego), `cost_entries` (branch_id, date, category: food|beverage|labor|other, amount, source: manual|stock|payroll).
-- Dashboard: Food Cost %, Beverage Cost %, Labor Cost % vs przychód; per lokal i per sieć; zakresy dat.
+- Tabele: `revenue_entries` (branch_id, date, amount — zasilane z raportu menadżerskiego), `cost_entries` (branch_id, date, **category_id** → `cost_categories`, amount, source: manual|stock|payroll).
+- **Konfigurowalne kategorie** (faza 9): `cost_categories` (org_id, name, sort) — org admin dodaje/zmienia nazwę/usuwa (reassign-or-block). Zabity enum food|beverage|labor|other.
+- Dashboard: karty KPI **dynamiczne per kategoria** (% kosztu vs przychód) + karty Przychód i Koszty razem; per oddział i per sieć; zakresy dat.
 - MVP: wpisy ręczne + automatyczne z raportu dnia; integracje POS — przyszłość.
+
+### M12. Inwentaryzacja (spis z natury)
+- Tabele: `stocktakes` (branch_id, status: draft|closed, note, closed_by/at), `stocktake_items` (stocktake_id, product_id, expected_qty snapshot, counted_qty). RPC `close_stocktake` zapisuje ruchy `correction` (delta = counted − expected) i domyka spis (niezmienny po zamknięciu).
+- UI: zakładka na `/stock`; start (snapshot aktywnych produktów), tryb liczenia mobile-first, zapis na bieżąco, zamknięcie z podsumowaniem różnic, historia.
+
+### Załączniki (faza 9)
+- Prywatny bucket Storage `attachments`, ścieżka `{org_id}/{branch_id|'org'}/{context}/{uuid}-plik`; RLS: odczyt = członek org z dostępem do oddziału, zapis = j.w. + owner. Metadane w kolumnach `attachments jsonb` na `task_comments`, `chat_messages`, `day_notes`. Podgląd obrazów inline (signed URL), pozostałe jako plik do pobrania.
 
 ### M10. Czaty grupowe
 - Tabele: `chat_channels` (org_id, branch_id nullable, type: org|branch|custom, name), `chat_members` (dla custom), `chat_messages` (channel_id, author_id, body, attachments).
@@ -202,6 +211,8 @@ design.md               # TEN PLIK
 | 5 | Magazyn (M8) + koszty (M9) | ⬜ |
 | 6 | Szlif: PWA, wydajność, testy E2E krytycznych ścieżek, RODO-czyszczenie | ✅ |
 | 7 | Feedback: landing+cennik, subskrypcje+demo (M11), users po username, powiązania zadań, wskaźnik pisania, widok sieci magazynu, fix realtime, konto testowe | ✅ |
+| 8 | Redesign wizualny: system tokenów, marka terakota, hostowane fonty, hierarchia powierzchni | ✅ |
+| 9 | Genericyzacja (branże, konfigurowalne kategorie kosztów i sekcje raportu), inwentaryzacja (M12), załączniki, pulpit, wyszukiwarka Cmd+K | ✅ |
 
 Każda faza kończy się działającą aplikacją (migracje + UI + realtime tam gdzie trzeba).
 
@@ -482,6 +493,67 @@ działania, 04 live chat + typing w dwóch kontekstach, 08 landing z cennikiem d
   `app/components/reports/{DayNotes,ManagerReport}.vue`, `PRODUCT.md`.
 - **Weryfikacja:** `nuxt build` czysto; Playwright 13/13; kontrast tekstu i plakietek ≥ WCAG AA.
 
+### Odstępstwa z fazy 9 (genericyzacja + inwentaryzacja + załączniki + pulpit + wyszukiwarka, 2026-07-09)
+
+Pięć migracji: `20260709220000_phase9_cost_categories.sql`, `..220100_phase9_report_sections.sql`,
+`..220200_phase9_industry_presets.sql`, `..220300_phase9_stocktake.sql`,
+`..220400_phase9_attachments.sql`.
+
+**Pivot produktowy.** OZMO to teraz ogólna platforma do zarządzania firmą wielooddziałową
+(dowolna branża). Nic branżowego nie jest zaszyte na sztywno — treści startowe dobiera preset
+branży, a kluczowe słowniki są konfigurowalne.
+
+**1. Konfigurowalne kategorie kosztów.** Zabity enum `cost_category`; nowa tabela
+`cost_categories (org_id, name, sort, unique(org_id, lower(name)))`. `cost_entries.category` →
+`category_id` (FK, NOT NULL). Migracja tworzy 4 domyślne kategorie PL per org z danymi i mapuje
+wiersze (food→Jedzenie, beverage→Napoje, labor→Praca, other→Inne), potem drop kolumny+typu.
+RLS: SELECT członek org, CUD org admin. UI `/costs`: karty KPI dynamiczne per kategoria (% vs
+przychód) + karty Przychód i Koszty razem; `CategoryManager` (dodaj/zmień nazwę/usuń z
+reassign-or-block gdy istnieją wpisy).
+
+**2. Konfigurowalne sekcje raportu.** Zabity enum `report_section`; nowa tabela
+`report_section_defs (org_id, name, sort, fields jsonb [{key,label,type: money|number|text|
+boolean}], required, is_revenue_source)`. `manager_report_sections.section` → `section_def_id`
+(FK). Trigger `seed_report_sections` tworzy jeden wiersz per def. Close-lock = wszystkie
+**wymagane** sekcje `completed`. `sync_revenue_from_report` sumuje pola `money` sekcji
+`is_revenue_source` (zamiast twardego `utarg`). UI: `ManagerReport` renderuje pola dynamicznie
+per typ; `SectionConfig` (org admin, zakładka „Sekcje raportu" na `/reports`) — CRUD defów,
+edytor pól, reorder, toggle required/revenue-source (jeden revenue-source na org).
+
+**3. Presety branż + neutralne słownictwo.** `organizations.industry text`. SQL
+`apply_industry_preset(org_id, industry)` seeduje checklisty + kategorie kosztów + sekcje raportu
+per branża (gastronomia, kawiarnia, hotel, sklep, magazyn, inna). Zastąpił restauracyjny trigger
+`seed_default_checklist_templates`; nowy trigger `organizations_apply_preset` woła preset wg
+`coalesce(industry,'inna')`, więc **każda** org (onboarding, seed, service_role/testy) dostaje
+spójny zestaw startowy. `create_organization` przyjmuje teraz `_industry` (drop starej 2-arg
+wersji name+slug; 1-arg zostaje). Onboarding = 2 kroki (nazwa → wybór branży). Demo-sample
+seeding bez zmian. Uwaga: orgy testowe (`seedOrgWithUsers`) bez industry → preset `inna`
+(3 checklisty / 3 kategorie / 2 defy) — testy zależne od treści dostosowane.
+
+**4. Inwentaryzacja (M12).** `stocktakes` + `stocktake_items` (enum `stocktake_status` w tym
+samym pliku — brand-new). Snapshot `expected_qty` z `stock_levels` przy dodaniu pozycji. RPC
+`close_stocktake` (definer, sprawdza `is_branch_manager`): dla każdej pozycji z `counted_qty ≠
+expected` wstawia ruch `correction` (delta = counted − expected, note `Inwentaryzacja #id`),
+domyka spis. Niezmienność po zamknięciu (triggery `enforce_stocktake_immutable` /
+`enforce_stocktake_item_editable`). RLS: SELECT dostęp do oddziału, CUD manager. UI: zakładka
+`/stock` „Inwentaryzacja" (start → liczenie mobile-first → zamknięcie z podsumowaniem różnic →
+historia).
+
+**5. Załączniki + pulpit + wyszukiwarka.** Bucket `attachments` (prywatny, 10 MB, obrazy/pdf/
+doc/xls/txt), ścieżka `{org_id}/{branch_id|'org'}/{context}/{uuid}-plik`. Helper
+`private.can_access_attachment(name)` parsuje ścieżkę → polityki storage (odczyt: członek org +
+dostęp do oddziału; zapis: j.w. + owner; delete: owner). Kolumny `attachments jsonb` na
+`task_comments`/`chat_messages`/`day_notes`; payloady broadcastu (czat, komentarze) niosą
+`attachments`. Pulpit (`index.vue`): widżety Moje zadania / Najbliższa zmiana / Alerty
+magazynowe / Nieprzeczytane czaty / Notatki dnia + mini-statystyki sieci dla admina. Wyszukiwarka
+globalna Cmd/Ctrl+K (dialog na prymitywach shadcn, `ilike` po zadaniach/produktach/ludziach/
+kanałach/oddziałach w aktywnej org, RLS skopuje wyniki).
+
+**Weryfikacja fazy 9:** `supabase db reset` (19 migracji + seed) czysto; `db restart kong`;
+`db:types`; `nuxt build` czysto. RLS/triggery (node `tests/rls/phase9.mjs`): **23/23 PASS**
+(preset per org, izolacja obcej org, employee vs manager na kategoriach/defach/spisie,
+close_stocktake → korekty + poprawione stany + niezmienność). Playwright: patrz niżej.
+
 ## 11. Konwencje
 
 - Commity: Conventional Commits.
@@ -498,7 +570,7 @@ działania, 04 live chat + typing w dwóch kontekstach, 08 landing z cennikiem d
 > na końcu markup stron. Pełny kontekst produktowy: `PRODUCT.md`.
 
 ### 12.1 Tożsamość i strategia koloru
-Marka OZMO = **ciepłe, niezawodne narzędzie dla gastronomii/hotelarstwa**, nie chłodny SaaS.
+Marka OZMO = **ciepłe, niezawodne narzędzie dla firm wielooddziałowych** (dowolna branża), nie chłodny SaaS.
 Ciepło niesie akcent **terakota** + subtelnie ciepły canvas + krojowy font nagłówkowy — nigdy
 beżowe tło ani fioletowe gradienty. Strategia: **restrained** w produkcie (neutralne + jeden
 akcent z intencją), odrobinę odważniej na landingu.

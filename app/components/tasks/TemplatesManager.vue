@@ -142,7 +142,7 @@ async function remove(t: ChecklistTemplate) {
         <form class="space-y-4" @submit.prevent="save">
           <div class="space-y-2">
             <Label for="tpl-name">Nazwa</Label>
-            <Input id="tpl-name" v-model="form.name" placeholder="np. Otwarcie lokalu" required />
+            <Input id="tpl-name" v-model="form.name" placeholder="np. Otwarcie oddziału" required />
           </div>
           <div class="space-y-2">
             <Label for="tpl-desc">Opis (opcjonalnie)</Label>

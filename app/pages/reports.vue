@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileText, ClipboardCheck } from '@lucide/vue'
+import { FileText, ClipboardCheck, SlidersHorizontal } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 
 type BranchRole = Database['public']['Enums']['branch_role']
@@ -29,7 +29,7 @@ const { data: myRole } = await useAsyncData(
 )
 
 const isBranchManager = computed(() => isAdmin.value || myRole.value === 'manager')
-const tab = ref<'day' | 'manager'>('day')
+const tab = ref<'day' | 'manager' | 'sections'>('day')
 </script>
 
 <template>
@@ -53,6 +53,9 @@ const tab = ref<'day' | 'manager'>('day')
         <TabsTrigger value="manager">
           <ClipboardCheck class="mr-1.5 size-4" /> Raport menadżerski
         </TabsTrigger>
+        <TabsTrigger v-if="isAdmin" value="sections">
+          <SlidersHorizontal class="mr-1.5 size-4" /> Sekcje raportu
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="day" class="mt-4">
@@ -72,6 +75,10 @@ const tab = ref<'day' | 'manager'>('day')
           :branch-id="activeBranchId"
           :can-manage="isBranchManager"
         />
+      </TabsContent>
+
+      <TabsContent v-if="isAdmin" value="sections" class="mt-4">
+        <ReportsSectionConfig v-if="activeOrgId" :org-id="activeOrgId" />
       </TabsContent>
     </Tabs>
   </div>

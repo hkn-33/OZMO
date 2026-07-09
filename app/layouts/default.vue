@@ -14,6 +14,7 @@ import {
   LogOut,
   Check,
   Settings,
+  Search,
 } from '@lucide/vue'
 
 type NavItem = {
@@ -40,6 +41,16 @@ const primaryItems = navItems.filter((i) => i.primary)
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const sheetOpen = ref(false)
+const searchOpen = ref(false)
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    searchOpen.value = true
+  }
+}
+onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
 
 const { memberships, activeOrg, activeOrgId, setActive, load } = useOrg()
 await load()
@@ -144,6 +155,17 @@ async function logout() {
           <LayoutBranchPicker />
         </div>
         <div class="flex items-center gap-1">
+          <button
+            class="hidden items-center gap-2 rounded-md border bg-muted/40 px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted sm:flex"
+            @click="searchOpen = true"
+          >
+            <Search class="size-4" />
+            <span>Szukaj…</span>
+            <kbd class="rounded border bg-background px-1.5 font-mono text-[10px]">⌘K</kbd>
+          </button>
+          <Button variant="ghost" size="icon" class="sm:hidden" @click="searchOpen = true">
+            <Search class="size-5" />
+          </Button>
           <LayoutNotificationBell />
           <Sheet v-model:open="sheetOpen">
             <SheetTrigger as-child>
@@ -220,6 +242,7 @@ async function logout() {
       </button>
     </nav>
 
+    <GlobalSearch v-model:open="searchOpen" />
     <UpgradeModal />
   </div>
 </template>

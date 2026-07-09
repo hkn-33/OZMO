@@ -89,7 +89,7 @@ export async function seedOrgWithUsers(): Promise<SeededOrg> {
   const orgName = `Sieć ${s}`
   const { data: org, error: orgErr } = await admin
     .from('organizations')
-    .insert({ name: orgName, slug: `siec-${s}`, created_by: owner.id })
+    .insert({ name: orgName, slug: `siec-${s}`, created_by: owner.id, industry: 'gastronomia' })
     .select()
     .single()
   if (orgErr) throw new Error(`org: ${orgErr.message}`)

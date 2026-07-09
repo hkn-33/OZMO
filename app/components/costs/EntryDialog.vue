@@ -2,15 +2,14 @@
 import { toast } from 'vue-sonner'
 import type { Database } from '~~/shared/types/database.types'
 
-type CostCategory = Database['public']['Enums']['cost_category']
-
 const props = defineProps<{
   orgId: string
   branchId: string
+  categories: { id: string; name: string }[]
   editing: {
     id: string
     date: string
-    category: CostCategory
+    category_id: string
     amount: number
     note: string | null
   } | null
@@ -23,25 +22,19 @@ const supabase = useSupabaseClient<Database>()
 const { isDemo, upgradeOpen } = useDemoGuard()
 const user = useSupabaseUser()
 
-const CATEGORIES: { value: CostCategory; label: string }[] = [
-  { value: 'food', label: 'Żywność' },
-  { value: 'beverage', label: 'Napoje' },
-  { value: 'labor', label: 'Praca' },
-  { value: 'other', label: 'Inne' },
-]
-
-const form = reactive({ date: props.defaultDate, category: 'food' as CostCategory, amount: '', note: '' })
+const form = reactive({ date: props.defaultDate, categoryId: '', amount: '', note: '' })
 
 watch(open, (v) => {
   if (!v) return
+  const firstCat = props.categories[0]?.id ?? ''
   if (props.editing) {
     form.date = props.editing.date
-    form.category = props.editing.category
+    form.categoryId = props.editing.category_id
     form.amount = String(props.editing.amount)
     form.note = props.editing.note ?? ''
   } else {
     form.date = props.defaultDate
-    form.category = 'food'
+    form.categoryId = firstCat
     form.amount = ''
     form.note = ''
   }
@@ -55,11 +48,15 @@ async function save() {
     toast.error('Podaj kwotę ≥ 0')
     return
   }
+  if (!form.categoryId) {
+    toast.error('Wybierz kategorię')
+    return
+  }
   if (!user.value) return
   saving.value = true
   const payload = {
     date: form.date,
-    category: form.category,
+    category_id: form.categoryId,
     amount,
     note: form.note.trim() || null,
   }
@@ -95,12 +92,15 @@ async function save() {
         </div>
         <div class="space-y-2">
           <Label>Kategoria</Label>
-          <Select v-model="form.category">
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select v-model="form.categoryId">
+            <SelectTrigger><SelectValue placeholder="Wybierz kategorię" /></SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="c in CATEGORIES" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
+              <SelectItem v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</SelectItem>
             </SelectContent>
           </Select>
+          <p v-if="!categories.length" class="text-xs text-muted-foreground">
+            Brak kategorii kosztów — dodaj je w sekcji „Kategorie kosztów".
+          </p>
         </div>
         <div class="space-y-2">
           <Label for="c-amount">Kwota (zł)</Label>

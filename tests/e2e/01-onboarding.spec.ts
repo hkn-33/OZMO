@@ -17,8 +17,10 @@ test('register → onboarding → create org → dashboard shows org name', asyn
 
   const orgName = `Sieć ${s}`
   await page.fill('#name', orgName)
-  // slug auto-fills from name; leave it.
-  await page.getByRole('button', { name: 'Utwórz organizację' }).click()
+  // Step 1 → industry step; pick an industry, then create.
+  await page.getByRole('button', { name: 'Dalej' }).click()
+  await page.getByRole('button', { name: 'Gastronomia' }).click()
+  await page.getByRole('button', { name: 'Utwórz firmę' }).click()
 
   await page.waitForURL((url) => url.pathname === '/')
   await expect(

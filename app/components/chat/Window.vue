@@ -3,6 +3,7 @@ import { Send } from '@lucide/vue'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { Database } from '~~/shared/types/database.types'
 import type { ChatChannel } from '~/composables/useChat'
+import type { Attachment } from '~/composables/useAttachments'
 
 const props = defineProps<{ channel: ChatChannel }>()
 const emit = defineEmits<{ read: [channelId: string] }>()
@@ -16,6 +17,7 @@ interface Message {
   author_id: string
   body: string
   created_at: string
+  attachments: Attachment[]
 }
 
 const PAGE = 30
@@ -26,6 +28,7 @@ const hasMore = ref(false)
 const names = ref<Record<string, string>>({})
 const scroller = ref<HTMLElement | null>(null)
 const body = ref('')
+const pendingAttachments = ref<Attachment[]>([])
 const sending = ref(false)
 let channel: RealtimeChannel | null = null
 
@@ -81,11 +84,11 @@ async function loadInitial() {
   loading.value = true
   const { data } = await supabase
     .from('chat_messages')
-    .select('id, author_id, body, created_at')
+    .select('id, author_id, body, created_at, attachments')
     .eq('channel_id', props.channel.id)
     .order('created_at', { ascending: false })
     .limit(PAGE)
-  const rows = ((data ?? []) as Message[]).reverse()
+  const rows = ((data ?? []) as unknown as Message[]).reverse()
   messages.value = rows
   hasMore.value = (data?.length ?? 0) === PAGE
   await resolveNames(rows.map((m) => m.author_id))
@@ -102,12 +105,12 @@ async function loadOlder() {
   const oldest = messages.value[0]!.created_at
   const { data } = await supabase
     .from('chat_messages')
-    .select('id, author_id, body, created_at')
+    .select('id, author_id, body, created_at, attachments')
     .eq('channel_id', props.channel.id)
     .lt('created_at', oldest)
     .order('created_at', { ascending: false })
     .limit(PAGE)
-  const rows = ((data ?? []) as Message[]).reverse()
+  const rows = ((data ?? []) as unknown as Message[]).reverse()
   hasMore.value = (data?.length ?? 0) === PAGE
   await resolveNames(rows.map((m) => m.author_id))
   messages.value = [...rows, ...messages.value]
@@ -135,7 +138,13 @@ async function subscribe() {
       const p = msg.payload as Message
       if (messages.value.some((m) => m.id === p.id)) return
       await resolveNames([p.author_id])
-      messages.value.push({ id: p.id, author_id: p.author_id, body: p.body, created_at: p.created_at })
+      messages.value.push({
+        id: p.id,
+        author_id: p.author_id,
+        body: p.body,
+        created_at: p.created_at,
+        attachments: p.attachments ?? [],
+      })
       scrollToBottom(true)
       if (p.author_id !== user.value?.id) markRead()
     })
@@ -155,7 +164,7 @@ function teardown() {
 
 async function send() {
   const text = body.value.trim()
-  if (!text || sending.value || !user.value) return
+  if ((!text && !pendingAttachments.value.length) || sending.value || !user.value) return
   if (isDemo.value) {
     upgradeOpen.value = true
     return
@@ -169,14 +178,16 @@ async function send() {
       branch_id: props.channel.branch_id,
       author_id: user.value.id,
       body: text,
+      attachments: pendingAttachments.value,
     })
-    .select('id, author_id, body, created_at')
+    .select('id, author_id, body, created_at, attachments')
     .single()
   sending.value = false
   if (error) return
   body.value = ''
+  pendingAttachments.value = []
   if (data && !messages.value.some((m) => m.id === data.id)) {
-    messages.value.push(data as Message)
+    messages.value.push(data as unknown as Message)
     scrollToBottom(true)
   }
 }
@@ -252,7 +263,8 @@ onBeforeUnmount(teardown)
               <span class="text-sm font-medium">{{ nameOf(m.author_id) }}</span>
               <span class="text-[11px] text-muted-foreground">{{ timeLabel(m.created_at) }}</span>
             </div>
-            <p class="whitespace-pre-wrap break-words text-sm">{{ m.body }}</p>
+            <p v-if="m.body" class="whitespace-pre-wrap break-words text-sm">{{ m.body }}</p>
+            <AttachmentList :attachments="m.attachments" />
           </div>
         </div>
       </template>
@@ -262,6 +274,16 @@ onBeforeUnmount(teardown)
       <p class="mb-1 h-4 text-xs text-muted-foreground" data-testid="typing-indicator">
         {{ typingLabel }}
       </p>
+      <!-- NB: `channel` (top-level realtime var) shadows the prop in template
+           scope, so bind the prop explicitly via `props.channel`. -->
+      <AttachmentInput
+        v-if="props.channel"
+        v-model="pendingAttachments"
+        :org-id="props.channel.org_id"
+        :branch-id="props.channel.branch_id"
+        context="chat"
+        class="mb-1.5"
+      />
       <div class="flex items-end gap-2">
         <Textarea
           v-model="body"
@@ -271,7 +293,7 @@ onBeforeUnmount(teardown)
           @input="notifyTyping"
           @keydown.enter.exact.prevent="send"
         />
-        <Button size="icon" :disabled="sending || !body.trim()" @click="send">
+        <Button size="icon" :disabled="sending || (!body.trim() && !pendingAttachments.length)" @click="send">
           <Send class="size-4" />
         </Button>
       </div>

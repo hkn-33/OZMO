@@ -15,7 +15,7 @@ import {
 
 const steps = [
   { icon: UserPlus, title: 'Załóż konto', desc: 'Bez karty, bez wdrożeniowca. Kilka minut i jesteś w środku.' },
-  { icon: Building2, title: 'Dodaj lokale i zespół', desc: 'Zaproś kierowników i pracowników, ustaw oddziały i role.' },
+  { icon: Building2, title: 'Dodaj oddziały i zespół', desc: 'Zaproś kierowników i pracowników, ustaw oddziały i role.' },
   { icon: Rocket, title: 'Ruszasz z pierwszą zmianą', desc: 'Checklisty, grafik i czaty działają od pierwszego dnia.' },
 ]
 
@@ -23,21 +23,21 @@ const plans = [
   {
     name: 'Starter',
     price: '149',
-    tagline: 'Dla pojedynczego lokalu, który chce ogarnąć podstawy.',
+    tagline: 'Dla pojedynczego oddziału, który chce ogarnąć podstawy.',
     highlight: false,
     features: ['Zadania i checklisty', 'Czaty zespołu', 'Raporty dnia'],
   },
   {
     name: 'Pro',
     price: '249',
-    tagline: 'Dla lokali, które planują grafik i pilnują magazynu.',
+    tagline: 'Dla firm, które planują grafik i pilnują magazynu.',
     highlight: true,
     features: ['Wszystko ze Starter', 'Grafik pracy', 'Raport menadżerski', 'Magazyn i stany'],
   },
   {
     name: 'Sieć',
     price: '399',
-    tagline: 'Dla właścicieli kilku lokali z widokiem na całą sieć.',
+    tagline: 'Dla firm z wieloma oddziałami i widokiem na całą sieć.',
     highlight: false,
     features: ['Wszystko z Pro', 'Kontrola kosztów', 'Priorytetowe wsparcie'],
   },
@@ -77,14 +77,15 @@ const plans = [
         <div class="ozmo-rise">
           <span class="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-xs">
             <span class="size-1.5 rounded-full bg-success"></span>
-            System operacyjny dla gastronomii i hotelarstwa
+            System do zarządzania firmą wielooddziałową
           </span>
           <h1 class="mt-5 font-heading text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.4rem]">
-            System operacyjny dla <span class="text-primary">sieci restauracji i hoteli</span>
+            System do zarządzania <span class="text-primary">firmą wielooddziałową</span>
           </h1>
           <p class="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-            Zadania, grafik, magazyn, raporty i czaty w jednym miejscu, zamiast Excela,
-            WhatsAppa i papierowych checklist. Na telefonie i na komputerze.
+            Kawiarnia, restauracja, hotel, magazyn, hurtownia czy sklep — zadania, grafik,
+            magazyn, raporty i czaty w jednym miejscu, zamiast Excela, WhatsAppa i papierowych
+            checklist. Na telefonie i na komputerze.
           </p>
           <div class="mt-8 flex flex-col gap-3 sm:flex-row">
             <NuxtLink to="/auth/register">
@@ -122,7 +123,7 @@ const plans = [
             </div>
             <div class="space-y-2.5 p-4">
               <div class="rounded-xl border border-border p-3">
-                <p class="text-sm font-medium">Otwarcie lokalu</p>
+                <p class="text-sm font-medium">Otwarcie oddziału</p>
                 <div class="mt-2 flex flex-wrap items-center gap-1.5">
                   <Badge variant="warning" class="text-[10px]">Wysoki</Badge>
                   <Badge variant="warning" class="text-[10px]">W trakcie</Badge>
@@ -168,7 +169,7 @@ const plans = [
     <!-- Funkcje: bento z rytmem, bez powtarzalnej siatki kart -->
     <section id="funkcje" class="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-20">
       <h2 class="max-w-2xl font-heading text-3xl font-bold tracking-tight">
-        Wszystko, czego potrzebuje sieć lokali
+        Wszystko, czego potrzebuje firma wielooddziałowa
       </h2>
       <p class="mt-3 max-w-xl text-muted-foreground">
         Sześć modułów, które codziennie robią różnicę: od pierwszej checklisty po koszty na koniec miesiąca.
@@ -181,7 +182,7 @@ const plans = [
             <ListChecks class="size-7" />
             <h3 class="mt-4 font-heading text-2xl font-bold tracking-tight">Zadania i checklisty</h3>
             <p class="mt-2 max-w-md text-primary-foreground/85">
-              Otwarcia, zamknięcia i Sanepid z gotowych szablonów. Przydzielasz osobom,
+              Otwarcia, zamknięcia i kontrole z gotowych szablonów. Przydzielasz osobom,
               a postęp widać na żywo, pozycja po pozycji.
             </p>
           </div>
@@ -204,7 +205,7 @@ const plans = [
           <MessagesSquare class="size-6" />
           <h3 class="mt-4 font-heading text-lg font-bold tracking-tight">Czaty zespołu</h3>
           <p class="mt-2 text-sm text-background/75">
-            Kanał sieci i kanały lokali. Koniec z chaosem na WhatsAppie.
+            Kanał firmy i kanały oddziałów. Koniec z chaosem na WhatsAppie.
           </p>
         </article>
 
@@ -236,7 +237,7 @@ const plans = [
           <Wallet class="size-6 text-primary" />
           <h3 class="mt-4 font-heading text-lg font-bold tracking-tight">Kontrola kosztów</h3>
           <p class="mt-2 text-sm text-muted-foreground">
-            Food, Beverage i Labor Cost % per lokal i cała sieć, liczone automatycznie.
+            Koszty w podziale na własne kategorie, per oddział i cała sieć, liczone automatycznie.
           </p>
         </article>
       </div>
@@ -266,7 +267,7 @@ const plans = [
       <div class="max-w-2xl">
         <h2 class="font-heading text-3xl font-bold tracking-tight">Pakiety</h2>
         <p class="mt-3 text-muted-foreground">
-          Ceny wkrótce — skontaktuj się z nami. Rozliczenie za lokal, miesięcznie.
+          Ceny wkrótce — skontaktuj się z nami. Rozliczenie za oddział, miesięcznie.
         </p>
       </div>
       <div class="mt-10 grid items-start gap-6 lg:grid-cols-3">
@@ -281,7 +282,7 @@ const plans = [
           <p class="mt-1.5 min-h-10 text-sm text-muted-foreground">{{ p.tagline }}</p>
           <div class="mt-5 flex items-baseline gap-1.5">
             <span class="font-heading text-4xl font-bold tracking-tight tabular-nums">{{ p.price }} zł</span>
-            <span class="text-sm text-muted-foreground">/ mc za lokal</span>
+            <span class="text-sm text-muted-foreground">/ mc za oddział</span>
           </div>
           <div class="my-6 h-px bg-border"></div>
           <ul class="flex-1 space-y-2.5 text-sm">
@@ -308,7 +309,7 @@ const plans = [
           Gotowy uporządkować swoją sieć?
         </h2>
         <p class="mx-auto mt-4 max-w-xl text-background/75">
-          Załóż konto, dodaj pierwszy lokal i przetestuj OZMO na najbliższej zmianie.
+          Załóż konto, dodaj pierwszy oddział i przetestuj OZMO na najbliższej zmianie.
         </p>
         <NuxtLink to="/auth/register" class="mt-8 inline-block">
           <Button size="lg" class="gap-2">Zacznij za darmo <ArrowRight class="size-4" /></Button>
@@ -323,7 +324,7 @@ const plans = [
           <span class="grid size-6 place-items-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">O</span>
           <span class="font-heading font-bold text-foreground">OZMO</span>
         </div>
-        <span>© {{ new Date().getFullYear() }} OZMO. System operacyjny dla sieci lokali.</span>
+        <span>© {{ new Date().getFullYear() }} OZMO. System do zarządzania firmą wielooddziałową.</span>
         <NuxtLink to="/auth/login" class="font-medium text-foreground transition-colors hover:text-primary">Zaloguj się</NuxtLink>
       </div>
     </footer>

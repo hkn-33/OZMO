@@ -104,7 +104,7 @@ async function toggleActive(b: BranchRow) {
       <div>
         <h1 class="text-2xl font-bold tracking-tight">Oddziały</h1>
         <p class="text-muted-foreground">
-          {{ activeOrg?.name ?? '' }} — lokale w Twojej sieci.
+          {{ activeOrg?.name ?? '' }} — oddziały w Twojej firmie.
         </p>
       </div>
       <Button v-if="isAdmin" @click="openCreate">
@@ -167,7 +167,7 @@ async function toggleActive(b: BranchRow) {
         <form class="space-y-4" @submit.prevent="save">
           <div class="space-y-2">
             <Label for="b-name">Nazwa</Label>
-            <Input id="b-name" v-model="form.name" placeholder="Lokal Centrum" required />
+            <Input id="b-name" v-model="form.name" placeholder="Oddział Centrum" required />
           </div>
           <div class="space-y-2">
             <Label for="b-address">Adres</Label>

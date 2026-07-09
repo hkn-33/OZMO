@@ -76,8 +76,10 @@ begin
   -- channel, per-branch chat channels, checklist templates and a demo
   -- subscription (upgraded to network below).
   -- ---------------------------------------------------------------
-  insert into public.organizations (id, name, slug, created_by)
-  values (d_org, 'Restauracje Bella', 'restauracje-bella', u_demo);
+  -- industry 'gastronomia' → the org-insert preset trigger seeds gastro
+  -- checklist templates, cost categories and report section defs.
+  insert into public.organizations (id, name, slug, created_by, industry)
+  values (d_org, 'Restauracje Bella', 'restauracje-bella', u_demo, 'gastronomia');
   update public.subscriptions set plan = 'network' where org_id = d_org;
 
   insert into public.org_members (org_id, user_id, role) values
@@ -162,19 +164,23 @@ begin
   -- ---------------------------------------------------------------
   insert into public.manager_reports (id, org_id, branch_id, date, status, created_by)
   values (rep_closed, d_org, b_centrum, current_date - 1, 'draft', u_demo);
-  -- Sections were auto-created; fill + complete them, then close.
-  update public.manager_report_sections
+  -- Sections were auto-created from report_section_defs; fill the revenue
+  -- section, complete every section, then close.
+  update public.manager_report_sections s
     set data = '{"gotowka": 1800, "karta": 2600, "inne": 100}'::jsonb, completed = true
-    where report_id = rep_closed and section = 'utarg';
-  update public.manager_report_sections set completed = true, data = '{"stan": "zgodny"}'::jsonb
-    where report_id = rep_closed and section <> 'utarg';
+    from public.report_section_defs d
+    where s.section_def_id = d.id and s.report_id = rep_closed and d.is_revenue_source;
+  update public.manager_report_sections s set completed = true
+    from public.report_section_defs d
+    where s.section_def_id = d.id and s.report_id = rep_closed and not d.is_revenue_source;
   update public.manager_reports set status = 'closed' where id = rep_closed;
 
   insert into public.manager_reports (id, org_id, branch_id, date, status, created_by)
   values (rep_draft, d_org, b_centrum, current_date, 'draft', u_demo);
-  update public.manager_report_sections
+  update public.manager_report_sections s
     set data = '{"gotowka": 900, "karta": 1200, "inne": 0}'::jsonb, completed = true
-    where report_id = rep_draft and section = 'utarg';
+    from public.report_section_defs d
+    where s.section_def_id = d.id and s.report_id = rep_draft and d.is_revenue_source;
 
   -- ---------------------------------------------------------------
   -- Schedule: shifts this week (published) + availability.
@@ -279,11 +285,13 @@ begin
        generate_series(current_date - 20, current_date - 2, interval '1 day') gs
   on conflict (branch_id, date, source) do nothing;
 
-  insert into public.cost_entries (org_id, branch_id, date, category, amount, source, created_by)
-  select d_org, b.id, gs::date, c.cat::public.cost_category, (c.factor * (3500 + random() * 2500))::numeric(10,2), 'manual', u_demo
-  from (values (b_centrum), (b_galeria), (b_stare)) b(id),
-       generate_series(current_date - 20, current_date - 2, interval '1 day') gs,
-       (values ('food', 0.30), ('beverage', 0.10), ('labor', 0.25)) c(cat, factor);
+  -- Categories were created by the gastro preset (Jedzenie/Napoje/Praca/...).
+  insert into public.cost_entries (org_id, branch_id, date, category_id, amount, source, created_by)
+  select d_org, b.id, gs::date, cc.id, (c.factor * (3500 + random() * 2500))::numeric(10,2), 'manual', u_demo
+  from (values (b_centrum), (b_galeria), (b_stare)) b(id)
+  cross join generate_series(current_date - 20, current_date - 2, interval '1 day') gs
+  cross join (values ('Jedzenie', 0.30), ('Napoje', 0.10), ('Praca', 0.25)) c(catname, factor)
+  join public.cost_categories cc on cc.org_id = d_org and cc.name = c.catname;
 
 end;
 $$;

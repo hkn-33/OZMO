@@ -272,6 +272,7 @@ export type Database = {
       }
       chat_messages: {
         Row: {
+          attachments: Json
           author_id: string
           body: string
           branch_id: string | null
@@ -281,6 +282,7 @@ export type Database = {
           org_id: string
         }
         Insert: {
+          attachments?: Json
           author_id?: string
           body: string
           branch_id?: string | null
@@ -290,6 +292,7 @@ export type Database = {
           org_id: string
         }
         Update: {
+          attachments?: Json
           author_id?: string
           body?: string
           branch_id?: string | null
@@ -386,11 +389,43 @@ export type Database = {
           },
         ]
       }
+      cost_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+          sort: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+          sort?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+          sort?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_categories_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cost_entries: {
         Row: {
           amount: number
           branch_id: string
-          category: Database["public"]["Enums"]["cost_category"]
+          category_id: string
           created_at: string
           created_by: string | null
           date: string
@@ -402,7 +437,7 @@ export type Database = {
         Insert: {
           amount?: number
           branch_id: string
-          category: Database["public"]["Enums"]["cost_category"]
+          category_id: string
           created_at?: string
           created_by?: string | null
           date?: string
@@ -414,7 +449,7 @@ export type Database = {
         Update: {
           amount?: number
           branch_id?: string
-          category?: Database["public"]["Enums"]["cost_category"]
+          category_id?: string
           created_at?: string
           created_by?: string | null
           date?: string
@@ -432,6 +467,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cost_entries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cost_categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cost_entries_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -442,6 +484,7 @@ export type Database = {
       }
       day_notes: {
         Row: {
+          attachments: Json
           author_id: string
           body: string
           branch_id: string
@@ -452,6 +495,7 @@ export type Database = {
           severity: Database["public"]["Enums"]["day_note_severity"]
         }
         Insert: {
+          attachments?: Json
           author_id?: string
           body: string
           branch_id: string
@@ -462,6 +506,7 @@ export type Database = {
           severity?: Database["public"]["Enums"]["day_note_severity"]
         }
         Update: {
+          attachments?: Json
           author_id?: string
           body?: string
           branch_id?: string
@@ -551,21 +596,21 @@ export type Database = {
           data: Json
           id: string
           report_id: string
-          section: Database["public"]["Enums"]["report_section"]
+          section_def_id: string
         }
         Insert: {
           completed?: boolean
           data?: Json
           id?: string
           report_id: string
-          section: Database["public"]["Enums"]["report_section"]
+          section_def_id: string
         }
         Update: {
           completed?: boolean
           data?: Json
           id?: string
           report_id?: string
-          section?: Database["public"]["Enums"]["report_section"]
+          section_def_id?: string
         }
         Relationships: [
           {
@@ -573,6 +618,13 @@ export type Database = {
             columns: ["report_id"]
             isOneToOne: false
             referencedRelation: "manager_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_report_sections_section_def_id_fkey"
+            columns: ["section_def_id"]
+            isOneToOne: false
+            referencedRelation: "report_section_defs"
             referencedColumns: ["id"]
           },
         ]
@@ -707,6 +759,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          industry: string | null
           name: string
           slug: string
         }
@@ -714,6 +767,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          industry?: string | null
           name: string
           slug: string
         }
@@ -721,6 +775,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          industry?: string | null
           name?: string
           slug?: string
         }
@@ -790,6 +845,47 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      report_section_defs: {
+        Row: {
+          created_at: string
+          fields: Json
+          id: string
+          is_revenue_source: boolean
+          name: string
+          org_id: string
+          required: boolean
+          sort: number
+        }
+        Insert: {
+          created_at?: string
+          fields?: Json
+          id?: string
+          is_revenue_source?: boolean
+          name: string
+          org_id: string
+          required?: boolean
+          sort?: number
+        }
+        Update: {
+          created_at?: string
+          fields?: Json
+          id?: string
+          is_revenue_source?: boolean
+          name?: string
+          org_id?: string
+          required?: boolean
+          sort?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_section_defs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       revenue_entries: {
         Row: {
@@ -1064,6 +1160,119 @@ export type Database = {
           },
         ]
       }
+      stocktake_items: {
+        Row: {
+          branch_id: string
+          counted_qty: number | null
+          created_at: string
+          expected_qty: number
+          id: string
+          org_id: string
+          product_id: string
+          stocktake_id: string
+        }
+        Insert: {
+          branch_id: string
+          counted_qty?: number | null
+          created_at?: string
+          expected_qty?: number
+          id?: string
+          org_id: string
+          product_id: string
+          stocktake_id: string
+        }
+        Update: {
+          branch_id?: string
+          counted_qty?: number | null
+          created_at?: string
+          expected_qty?: number
+          id?: string
+          org_id?: string
+          product_id?: string
+          stocktake_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stocktake_items_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stocktake_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stocktake_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stocktake_items_stocktake_id_fkey"
+            columns: ["stocktake_id"]
+            isOneToOne: false
+            referencedRelation: "stocktakes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stocktakes: {
+        Row: {
+          branch_id: string
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          org_id: string
+          status: Database["public"]["Enums"]["stocktake_status"]
+        }
+        Insert: {
+          branch_id: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          org_id: string
+          status?: Database["public"]["Enums"]["stocktake_status"]
+        }
+        Update: {
+          branch_id?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          org_id?: string
+          status?: Database["public"]["Enums"]["stocktake_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stocktakes_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stocktakes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -1206,6 +1415,7 @@ export type Database = {
       }
       task_comments: {
         Row: {
+          attachments: Json
           author_id: string
           body: string
           branch_id: string
@@ -1216,6 +1426,7 @@ export type Database = {
           task_id: string
         }
         Insert: {
+          attachments?: Json
           author_id?: string
           body: string
           branch_id: string
@@ -1226,6 +1437,7 @@ export type Database = {
           task_id: string
         }
         Update: {
+          attachments?: Json
           author_id?: string
           body?: string
           branch_id?: string
@@ -1360,6 +1572,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_industry_preset: {
+        Args: { _industry: string; _org_id: string }
+        Returns: undefined
+      }
+      close_stocktake: { Args: { _stocktake_id: string }; Returns: undefined }
       copy_week_shifts: {
         Args: {
           from_week_start: string
@@ -1375,6 +1592,7 @@ export type Database = {
               created_at: string
               created_by: string | null
               id: string
+              industry: string | null
               name: string
               slug: string
             }
@@ -1386,11 +1604,12 @@ export type Database = {
             }
           }
         | {
-            Args: { _name: string; _slug: string }
+            Args: { _industry: string; _name: string }
             Returns: {
               created_at: string
               created_by: string | null
               id: string
+              industry: string | null
               name: string
               slug: string
             }
@@ -1409,7 +1628,6 @@ export type Database = {
     Enums: {
       branch_role: "manager" | "employee"
       chat_channel_type: "org" | "branch" | "custom"
-      cost_category: "food" | "beverage" | "labor" | "other"
       cost_source: "manual" | "stock" | "payroll"
       day_note_severity: "info" | "issue"
       manager_report_status: "draft" | "closed"
@@ -1422,13 +1640,13 @@ export type Database = {
         | "stock_low"
       org_role: "owner" | "admin" | "member"
       plan: "demo" | "starter" | "pro" | "network"
-      report_section: "utarg" | "kasa" | "sanepid" | "magazyn" | "zmiana"
       stock_movement_type:
         | "delivery"
         | "usage"
         | "waste"
         | "correction"
         | "transfer"
+      stocktake_status: "draft" | "closed"
       task_priority: "low" | "normal" | "high" | "urgent"
       task_status: "todo" | "in_progress" | "done"
     }
@@ -1563,7 +1781,6 @@ export const Constants = {
     Enums: {
       branch_role: ["manager", "employee"],
       chat_channel_type: ["org", "branch", "custom"],
-      cost_category: ["food", "beverage", "labor", "other"],
       cost_source: ["manual", "stock", "payroll"],
       day_note_severity: ["info", "issue"],
       manager_report_status: ["draft", "closed"],
@@ -1577,7 +1794,6 @@ export const Constants = {
       ],
       org_role: ["owner", "admin", "member"],
       plan: ["demo", "starter", "pro", "network"],
-      report_section: ["utarg", "kasa", "sanepid", "magazyn", "zmiana"],
       stock_movement_type: [
         "delivery",
         "usage",
@@ -1585,6 +1801,7 @@ export const Constants = {
         "correction",
         "transfer",
       ],
+      stocktake_status: ["draft", "closed"],
       task_priority: ["low", "normal", "high", "urgent"],
       task_status: ["todo", "in_progress", "done"],
     },

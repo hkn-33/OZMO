@@ -3,6 +3,7 @@ import { toast } from 'vue-sonner'
 import { Trash2, Pencil, X, Check } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 import { formatDateTime } from '~/lib/utils'
+import type { Attachment } from '~/composables/useAttachments'
 
 type Severity = Database['public']['Enums']['day_note_severity']
 
@@ -27,6 +28,7 @@ interface Note {
   body: string
   severity: Severity
   created_at: string
+  attachments: Attachment[]
 }
 
 function todayStr() {
@@ -42,6 +44,7 @@ const loading = ref(false)
 
 const newBody = ref('')
 const newSeverity = ref<Severity>('info')
+const newAttachments = ref<Attachment[]>([])
 const saving = ref(false)
 
 const editingId = ref<string | null>(null)
@@ -67,11 +70,11 @@ async function load() {
   loading.value = true
   const { data } = await supabase
     .from('day_notes')
-    .select('id, author_id, date, body, severity, created_at')
+    .select('id, author_id, date, body, severity, created_at, attachments')
     .eq('branch_id', props.branchId)
     .eq('date', date.value)
     .order('created_at', { ascending: false })
-  notes.value = (data ?? []) as Note[]
+  notes.value = (data ?? []) as unknown as Note[]
   await resolveNames(notes.value.map((n) => n.author_id))
   loading.value = false
 }
@@ -92,8 +95,9 @@ async function addNote() {
       date: date.value,
       body: text,
       severity: newSeverity.value,
+      attachments: newAttachments.value,
     })
-    .select('id, author_id, date, body, severity, created_at')
+    .select('id, author_id, date, body, severity, created_at, attachments')
     .single()
   saving.value = false
   if (error) {
@@ -101,11 +105,12 @@ async function addNote() {
     return
   }
   if (data) {
-    notes.value.unshift(data as Note)
+    notes.value.unshift(data as unknown as Note)
     await resolveNames([data.author_id])
   }
   newBody.value = ''
   newSeverity.value = 'info'
+  newAttachments.value = []
 }
 
 function canEdit(n: Note) {
@@ -158,6 +163,12 @@ async function remove(n: Note) {
           v-model="newBody"
           rows="2"
           placeholder="Co się wydarzyło na zmianie? (np. awaria ekspresu, brak dostawy)"
+        />
+        <AttachmentInput
+          v-model="newAttachments"
+          :org-id="orgId"
+          :branch-id="branchId"
+          context="day-note"
         />
         <div class="flex items-center justify-between gap-3">
           <div class="flex gap-1.5">
@@ -216,7 +227,10 @@ async function remove(n: Note) {
             <Button size="sm" @click="saveEdit(n)"><Check class="mr-1 size-4" /> Zapisz</Button>
           </div>
         </div>
-        <p v-else class="mt-1.5 whitespace-pre-wrap text-sm">{{ n.body }}</p>
+        <template v-else>
+          <p class="mt-1.5 whitespace-pre-wrap text-sm">{{ n.body }}</p>
+          <AttachmentList :attachments="n.attachments" />
+        </template>
       </li>
     </ul>
   </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Boxes, ArrowLeftRight, PackageSearch, Truck, Network } from '@lucide/vue'
+import { Boxes, ArrowLeftRight, PackageSearch, Truck, Network, ClipboardCheck } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 
 type BranchRole = Database['public']['Enums']['branch_role']
@@ -29,7 +29,7 @@ const { data: role } = await useAsyncData(
 )
 
 const canManage = computed(() => isAdmin.value || role.value === 'manager')
-const tab = ref<'levels' | 'network' | 'movements' | 'products' | 'suppliers'>('levels')
+const tab = ref<'levels' | 'network' | 'movements' | 'stocktake' | 'products' | 'suppliers'>('levels')
 </script>
 
 <template>
@@ -55,6 +55,9 @@ const tab = ref<'levels' | 'network' | 'movements' | 'products' | 'suppliers'>('
         </TabsTrigger>
         <TabsTrigger value="movements">
           <ArrowLeftRight class="mr-1.5 size-4" /> Przyjęcie/Wydanie
+        </TabsTrigger>
+        <TabsTrigger value="stocktake">
+          <ClipboardCheck class="mr-1.5 size-4" /> Inwentaryzacja
         </TabsTrigger>
         <TabsTrigger v-if="canManage" value="products">
           <PackageSearch class="mr-1.5 size-4" /> Produkty
@@ -83,6 +86,16 @@ const tab = ref<'levels' | 'network' | 'movements' | 'products' | 'suppliers'>('
           :key="activeBranchId"
           :org-id="activeOrgId"
           :branch-id="activeBranchId"
+        />
+      </TabsContent>
+
+      <TabsContent value="stocktake" class="mt-4">
+        <StockStocktake
+          v-if="activeOrgId && activeBranchId"
+          :key="activeBranchId"
+          :org-id="activeOrgId"
+          :branch-id="activeBranchId"
+          :can-manage="canManage"
         />
       </TabsContent>
 

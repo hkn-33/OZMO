@@ -5,6 +5,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { Database } from '~~/shared/types/database.types'
 import { formatRelative, formatDateTime } from '~/lib/utils'
 import type { TaskMember } from '~/components/tasks/NewDialog.vue'
+import type { Attachment } from '~/composables/useAttachments'
 
 type TaskStatus = Database['public']['Enums']['task_status']
 type TaskPriority = Database['public']['Enums']['task_priority']
@@ -65,6 +66,7 @@ type Comment = {
   body: string
   mentions: string[]
   created_at: string
+  attachments: Attachment[]
 }
 
 type LinkedTask = { id: string; title: string; status: TaskStatus }
@@ -107,12 +109,12 @@ async function loadTask(id: string) {
     supabase.from('tasks').select('id, title, description, status, priority, due_at').eq('id', id).single(),
     supabase.from('task_assignees').select('user_id').eq('task_id', id),
     supabase.from('task_checklist_items').select('*').eq('task_id', id).order('sort'),
-    supabase.from('task_comments').select('id, author_id, body, mentions, created_at').eq('task_id', id).order('created_at'),
+    supabase.from('task_comments').select('id, author_id, body, mentions, created_at, attachments').eq('task_id', id).order('created_at'),
   ])
   task.value = (t.data as TaskFull) ?? null
   assignees.value = (a.data ?? []).map((x) => x.user_id)
   checklist.value = (c.data ?? []) as ChecklistItem[]
-  comments.value = (cm.data ?? []) as Comment[]
+  comments.value = (cm.data ?? []) as unknown as Comment[]
   if (task.value) {
     edit.title = task.value.title
     edit.description = task.value.description ?? ''
@@ -198,6 +200,7 @@ async function subscribeComments(id: string) {
           body: p.body,
           mentions: p.mentions ?? [],
           created_at: p.created_at,
+          attachments: p.attachments ?? [],
         })
       }
     })
@@ -224,11 +227,11 @@ function onFocus() {
   if (open.value && props.taskId) {
     supabase
       .from('task_comments')
-      .select('id, author_id, body, mentions, created_at')
+      .select('id, author_id, body, mentions, created_at, attachments')
       .eq('task_id', props.taskId)
       .order('created_at')
       .then(({ data }) => {
-        if (data) comments.value = data as Comment[]
+        if (data) comments.value = data as unknown as Comment[]
       })
   }
 }
@@ -345,6 +348,7 @@ async function deleteTask() {
 
 // --- komentarze + @wzmianki ---
 const commentBody = ref('')
+const commentAttachments = ref<Attachment[]>([])
 const mentionOpen = ref(false)
 const mentionQuery = ref('')
 const mentionMap = ref<Record<string, string>>({})
@@ -372,7 +376,7 @@ function pickMention(m: TaskMember) {
 }
 
 async function sendComment() {
-  if (!commentBody.value.trim() || !task.value || !user.value) return
+  if ((!commentBody.value.trim() && !commentAttachments.value.length) || !task.value || !user.value) return
   if (blockDemo()) return
   const ids = new Set<string>()
   for (const [name, id] of Object.entries(mentionMap.value)) {
@@ -388,8 +392,9 @@ async function sendComment() {
       author_id: user.value.id,
       body: commentBody.value.trim(),
       mentions: [...ids],
+      attachments: commentAttachments.value,
     })
-    .select('id, author_id, body, mentions, created_at')
+    .select('id, author_id, body, mentions, created_at, attachments')
     .single()
   sending.value = false
   if (error) {
@@ -397,9 +402,10 @@ async function sendComment() {
     return
   }
   if (data && !comments.value.some((c) => c.id === data.id)) {
-    comments.value.push(data as Comment)
+    comments.value.push(data as unknown as Comment)
   }
   commentBody.value = ''
+  commentAttachments.value = []
   mentionMap.value = {}
 }
 
@@ -596,7 +602,8 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
                   <span class="text-sm font-medium">{{ memberName(c.author_id) }}</span>
                   <span class="text-[11px] text-muted-foreground">{{ formatRelative(c.created_at) }}</span>
                 </div>
-                <p class="whitespace-pre-wrap text-sm">{{ c.body }}</p>
+                <p v-if="c.body" class="whitespace-pre-wrap text-sm">{{ c.body }}</p>
+                <AttachmentList :attachments="c.attachments" />
               </div>
             </li>
           </ul>
@@ -619,6 +626,13 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
               <span>{{ m.profiles?.full_name?.trim() || 'Użytkownik' }}</span>
             </button>
           </div>
+          <AttachmentInput
+            v-model="commentAttachments"
+            :org-id="orgId"
+            :branch-id="branchId"
+            context="task-comment"
+            class="mb-1.5"
+          />
           <div class="flex items-end gap-2">
             <Textarea
               v-model="commentBody"
@@ -628,7 +642,11 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
               @input="onCommentInput"
               @keydown.enter.exact.prevent="sendComment"
             />
-            <Button size="icon" :disabled="sending || !commentBody.trim()" @click="sendComment">
+            <Button
+              size="icon"
+              :disabled="sending || (!commentBody.trim() && !commentAttachments.length)"
+              @click="sendComment"
+            >
               <Send class="size-4" />
             </Button>
           </div>

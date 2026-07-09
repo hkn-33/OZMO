@@ -4,8 +4,6 @@ import { CheckCircle2, Circle, Lock } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 import { formatDateTime } from '~/lib/utils'
 
-type SectionKey = Database['public']['Enums']['report_section']
-
 const props = defineProps<{
   orgId: string
   branchId: string
@@ -20,54 +18,20 @@ function blockDemo() {
 }
 const user = useSupabaseUser()
 
-type FieldType = 'number' | 'textarea' | 'bool'
+type FieldType = 'money' | 'number' | 'text' | 'boolean'
 interface FieldDef {
   key: string
   label: string
   type: FieldType
 }
-const SECTION_ORDER: SectionKey[] = ['utarg', 'kasa', 'sanepid', 'magazyn', 'zmiana']
-const CONFIG: Record<SectionKey, { title: string; fields: FieldDef[] }> = {
-  utarg: {
-    title: 'Utarg',
-    fields: [
-      { key: 'gotowka', label: 'Gotówka (zł)', type: 'number' },
-      { key: 'karta', label: 'Karta (zł)', type: 'number' },
-      { key: 'inne', label: 'Inne (zł)', type: 'number' },
-    ],
-  },
-  kasa: {
-    title: 'Kasa',
-    fields: [
-      { key: 'stan_poczatkowy', label: 'Stan początkowy (zł)', type: 'number' },
-      { key: 'stan_koncowy', label: 'Stan końcowy (zł)', type: 'number' },
-      { key: 'uwagi', label: 'Uwagi', type: 'textarea' },
-    ],
-  },
-  sanepid: {
-    title: 'Sanepid',
-    fields: [
-      { key: 'zgodnosc', label: 'Zgodność z wymogami', type: 'bool' },
-      { key: 'uwagi', label: 'Uwagi', type: 'textarea' },
-    ],
-  },
-  magazyn: {
-    title: 'Magazyn',
-    fields: [
-      { key: 'braki', label: 'Braki', type: 'textarea' },
-      { key: 'zamowienia', label: 'Zamówienia', type: 'textarea' },
-    ],
-  },
-  zmiana: {
-    title: 'Zmiana',
-    fields: [
-      { key: 'obsada', label: 'Obsada (liczba osób)', type: 'number' },
-      { key: 'problemy', label: 'Problemy', type: 'textarea' },
-      { key: 'notatki', label: 'Notatki', type: 'textarea' },
-    ],
-  },
+interface SectionDef {
+  id: string
+  name: string
+  sort: number
+  fields: FieldDef[]
+  required: boolean
+  is_revenue_source: boolean
 }
-
 interface ReportRow {
   id: string
   date: string
@@ -77,15 +41,20 @@ interface ReportRow {
 }
 interface SectionRow {
   id: string
-  section: SectionKey
+  section_def_id: string
   data: Record<string, unknown>
   completed: boolean
+  def: SectionDef | null
 }
 
 function todayStr() {
   const d = new Date()
   const off = d.getTimezoneOffset()
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10)
+}
+
+function moneyLabel(f: FieldDef) {
+  return f.type === 'money' ? `${f.label} (zł)` : f.label
 }
 
 const date = ref(todayStr())
@@ -96,18 +65,19 @@ const creating = ref(false)
 const closing = ref(false)
 const closedByName = ref<string>('')
 // lokalne edytowalne kopie: sectionId -> { fields..., completed }
-// (luźne typowanie, by v-model bindował pola bez rzutowań w szablonie)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const forms = ref<Record<string, any>>({})
 
 const editable = computed(() => props.canManage && report.value?.status === 'draft')
 const orderedSections = computed(() =>
-  [...sections.value].sort(
-    (a, b) => SECTION_ORDER.indexOf(a.section) - SECTION_ORDER.indexOf(b.section),
-  ),
+  [...sections.value].sort((a, b) => (a.def?.sort ?? 0) - (b.def?.sort ?? 0)),
 )
-const completedCount = computed(() => sections.value.filter((s) => s.completed).length)
-const allComplete = computed(() => sections.value.length === 5 && completedCount.value === 5)
+const requiredSections = computed(() => sections.value.filter((s) => s.def?.required))
+const completedRequired = computed(() => requiredSections.value.filter((s) => s.completed).length)
+const requiredCount = computed(() => requiredSections.value.length)
+const allComplete = computed(
+  () => requiredCount.value > 0 && completedRequired.value === requiredCount.value,
+)
 
 async function load() {
   loading.value = true
@@ -115,6 +85,18 @@ async function load() {
   sections.value = []
   forms.value = {}
   closedByName.value = ''
+
+  // Definicje sekcji organizacji (mapa po id).
+  const { data: defsData } = await supabase
+    .from('report_section_defs')
+    .select('id, name, sort, fields, required, is_revenue_source')
+    .eq('org_id', props.orgId)
+    .order('sort', { ascending: true })
+  const defs = new Map<string, SectionDef>()
+  for (const d of (defsData ?? []) as unknown as SectionDef[]) {
+    defs.set(d.id, { ...d, fields: Array.isArray(d.fields) ? d.fields : [] })
+  }
+
   const { data: rep } = await supabase
     .from('manager_reports')
     .select('id, date, status, closed_by, closed_at')
@@ -122,12 +104,16 @@ async function load() {
     .eq('date', date.value)
     .maybeSingle()
   report.value = (rep as ReportRow) ?? null
+
   if (report.value) {
     const { data: secs } = await supabase
       .from('manager_report_sections')
-      .select('id, section, data, completed')
+      .select('id, section_def_id, data, completed')
       .eq('report_id', report.value.id)
-    sections.value = (secs ?? []) as SectionRow[]
+    sections.value = ((secs ?? []) as Omit<SectionRow, 'def'>[]).map((s) => ({
+      ...s,
+      def: defs.get(s.section_def_id) ?? null,
+    }))
     for (const s of sections.value) {
       forms.value[s.id] = { ...(s.data as Record<string, unknown>), completed: s.completed }
     }
@@ -143,7 +129,7 @@ async function load() {
   loading.value = false
 }
 
-watch([() => props.branchId, date], load, { immediate: true })
+watch([() => props.branchId, () => props.orgId, date], load, { immediate: true })
 
 async function createReport() {
   if (blockDemo()) return
@@ -167,13 +153,12 @@ async function saveSection(s: SectionRow) {
   if (blockDemo()) return
   const form = forms.value[s.id]!
   const { completed, ...rest } = form
-  // konwersja pól liczbowych
-  const cfg = CONFIG[s.section]
+  const fields = s.def?.fields ?? []
   const data: Record<string, unknown> = {}
-  for (const f of cfg.fields) {
+  for (const f of fields) {
     const v = rest[f.key]
-    if (f.type === 'number') data[f.key] = v === '' || v == null ? null : Number(v)
-    else if (f.type === 'bool') data[f.key] = !!v
+    if (f.type === 'money' || f.type === 'number') data[f.key] = v === '' || v == null ? null : Number(v)
+    else if (f.type === 'boolean') data[f.key] = !!v
     else data[f.key] = v ?? ''
   }
   const { error } = await supabase
@@ -208,7 +193,7 @@ async function closeReport() {
 
 function displayValue(s: SectionRow, f: FieldDef) {
   const v = (s.data as Record<string, unknown>)[f.key]
-  if (f.type === 'bool') return v ? 'Tak' : 'Nie'
+  if (f.type === 'boolean') return v ? 'Tak' : 'Nie'
   if (v == null || v === '') return '—'
   return String(v)
 }
@@ -247,8 +232,8 @@ function displayValue(s: SectionRow, f: FieldDef) {
           </span>
         </div>
         <div class="flex items-center gap-2 text-sm">
-          <span class="text-muted-foreground">Ukończono</span>
-          <span class="font-semibold">{{ completedCount }}/5</span>
+          <span class="text-muted-foreground">Ukończono (wymagane)</span>
+          <span class="font-semibold">{{ completedRequired }}/{{ requiredCount }}</span>
         </div>
       </div>
 
@@ -257,29 +242,30 @@ function displayValue(s: SectionRow, f: FieldDef) {
         <AccordionItem
           v-for="s in orderedSections"
           :key="s.id"
-          :value="s.section"
+          :value="s.id"
           class="px-4 last:border-b-0"
         >
           <AccordionTrigger class="hover:no-underline">
             <span class="flex items-center gap-2">
               <CheckCircle2 v-if="s.completed" class="size-4 text-primary" />
               <Circle v-else class="size-4 text-muted-foreground" />
-              {{ CONFIG[s.section].title }}
+              {{ s.def?.name ?? 'Sekcja' }}
+              <Badge v-if="s.def && !s.def.required" variant="secondary" class="text-xs">opcjonalna</Badge>
             </span>
           </AccordionTrigger>
           <AccordionContent>
             <!-- Edytowalny formularz -->
-            <div v-if="editable" class="space-y-3 pb-2">
-              <div v-for="f in CONFIG[s.section].fields" :key="f.key" class="space-y-1.5">
-                <template v-if="f.type === 'bool'">
+            <div v-if="editable && s.def" class="space-y-3 pb-2">
+              <div v-for="f in s.def.fields" :key="f.key" class="space-y-1.5">
+                <template v-if="f.type === 'boolean'">
                   <label class="flex items-center gap-2 text-sm">
                     <Checkbox v-model="forms[s.id][f.key]" />
                     {{ f.label }}
                   </label>
                 </template>
                 <template v-else>
-                  <Label class="text-xs text-muted-foreground">{{ f.label }}</Label>
-                  <Textarea v-if="f.type === 'textarea'" v-model="forms[s.id][f.key]" rows="2" />
+                  <Label class="text-xs text-muted-foreground">{{ moneyLabel(f) }}</Label>
+                  <Textarea v-if="f.type === 'text'" v-model="forms[s.id][f.key]" rows="2" />
                   <Input
                     v-else
                     v-model="forms[s.id][f.key]"
@@ -299,9 +285,9 @@ function displayValue(s: SectionRow, f: FieldDef) {
             </div>
 
             <!-- Widok tylko do odczytu -->
-            <dl v-else class="space-y-2 pb-2 text-sm">
-              <div v-for="f in CONFIG[s.section].fields" :key="f.key" class="flex justify-between gap-4">
-                <dt class="text-muted-foreground">{{ f.label }}</dt>
+            <dl v-else-if="s.def" class="space-y-2 pb-2 text-sm">
+              <div v-for="f in s.def.fields" :key="f.key" class="flex justify-between gap-4">
+                <dt class="text-muted-foreground">{{ moneyLabel(f) }}</dt>
                 <dd class="text-right font-medium">{{ displayValue(s, f) }}</dd>
               </div>
             </dl>
@@ -315,7 +301,8 @@ function displayValue(s: SectionRow, f: FieldDef) {
           {{ closing ? 'Zamykanie…' : 'Zamknij raport' }}
         </Button>
         <p v-if="!allComplete" class="text-center text-xs text-muted-foreground">
-          Aby zamknąć raport, uzupełnij i oznacz jako gotowe wszystkie 5 sekcji ({{ completedCount }}/5).
+          Aby zamknąć raport, uzupełnij i oznacz jako gotowe wszystkie wymagane sekcje
+          ({{ completedRequired }}/{{ requiredCount }}).
         </p>
       </div>
     </template>

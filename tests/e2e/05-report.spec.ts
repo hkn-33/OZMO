@@ -23,7 +23,7 @@ test('manager report: close blocked until all 5 sections complete, then closes',
 
   // Complete all 5 sections: expand → check "Sekcja gotowa" → save → collapse.
   // Assert the progress counter increments (robust vs. stacked toasts).
-  const sections = ['Utarg', 'Kasa', 'Sanepid', 'Magazyn', 'Zmiana']
+  const sections = ['Przychód dnia', 'Kasa', 'Kontrola jakości', 'Magazyn', 'Przebieg zmiany']
   for (let i = 0; i < sections.length; i++) {
     const trigger = op.getByRole('button', { name: sections[i] })
     await trigger.click()

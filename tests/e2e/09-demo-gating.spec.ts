@@ -13,7 +13,9 @@ test('demo org: clicking "Nowe zadanie" opens the upgrade modal', async ({ page 
   await page.waitForURL((url) => !url.pathname.startsWith('/auth'))
   await gotoH(page, '/onboarding')
   await page.fill('#name', `Sieć ${s}`)
-  await page.getByRole('button', { name: 'Utwórz organizację' }).click()
+  await page.getByRole('button', { name: 'Dalej' }).click()
+  await page.getByRole('button', { name: 'Gastronomia' }).click()
+  await page.getByRole('button', { name: 'Utwórz firmę' }).click()
   await page.waitForURL((url) => url.pathname === '/')
 
   // The demo org has a sample branch, so the tasks page shows the create button.
