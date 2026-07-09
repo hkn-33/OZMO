@@ -120,17 +120,22 @@ async function logout() {
 
     <!-- Main content -->
     <div class="lg:pl-60">
-      <!-- Mobile top bar -->
+      <!-- Top bar (branch picker + notifications; mobile also shows logo + menu) -->
       <header
-        class="flex h-14 items-center justify-between border-b px-4 lg:hidden"
+        class="flex h-14 items-center justify-between gap-3 border-b px-4"
       >
-        <span class="text-lg font-bold tracking-tight">OZMO</span>
-        <Sheet v-model:open="sheetOpen">
-          <SheetTrigger as-child>
-            <Button variant="ghost" size="icon">
-              <Menu class="size-5" />
-            </Button>
-          </SheetTrigger>
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-bold tracking-tight lg:hidden">OZMO</span>
+          <LayoutBranchPicker />
+        </div>
+        <div class="flex items-center gap-1">
+          <LayoutNotificationBell />
+          <Sheet v-model:open="sheetOpen">
+            <SheetTrigger as-child>
+              <Button variant="ghost" size="icon" class="lg:hidden">
+                <Menu class="size-5" />
+              </Button>
+            </SheetTrigger>
           <SheetContent side="right" class="w-72">
             <SheetHeader>
               <SheetTitle>Menu</SheetTitle>
@@ -159,7 +164,8 @@ async function logout() {
               </button>
             </div>
           </SheetContent>
-        </Sheet>
+          </Sheet>
+        </div>
       </header>
 
       <main class="p-4 pb-24 lg:p-8 lg:pb-8">

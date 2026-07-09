@@ -1,2 +1,8 @@
 -- Seed data for OZMO local dev.
 -- Phase 1: no org-specific seed yet (orgs are created via app onboarding).
+--
+-- Phase 2: default checklist templates are NOT seeded here. They are attached
+-- per-organization by an AFTER INSERT trigger on `organizations`
+-- (public.seed_default_checklist_templates, migration 20260709160000_tasks_module.sql),
+-- so every org — created via the app or here — gets the 5 Polish starter
+-- templates automatically. This keeps seed.sql org-agnostic.
