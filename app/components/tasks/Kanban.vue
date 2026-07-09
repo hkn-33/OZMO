@@ -25,10 +25,10 @@ const priorityLabels: Record<TaskPriority, string> = {
   high: 'Wysoki',
   urgent: 'Pilny',
 }
-const priorityVariant: Record<TaskPriority, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+const priorityVariant: Record<TaskPriority, 'default' | 'secondary' | 'outline' | 'destructive' | 'warning'> = {
   low: 'outline',
   normal: 'secondary',
-  high: 'default',
+  high: 'warning',
   urgent: 'destructive',
 }
 

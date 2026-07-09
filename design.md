@@ -463,6 +463,25 @@ działania, 04 live chat + typing w dwóch kontekstach, 08 landing z cennikiem d
 09 klik „Nowe zadanie" w orgu demo → UpgradeModal, 10 powiązania zadań add/nawigacja,
 11 matryca „Cała sieć" + login demo/Demo1234! pokazuje pulpit z danymi).
 
+### Odstępstwa z fazy 8 (redesign wizualny — hierarchia + tożsamość, 2026-07-09)
+
+- **Problem:** cały UI „zlewał się" — domyślny motyw shadcn (neutral) miał wszystkie tokeny w
+  skali szarości (`oklch(… 0 0)`), a `--background` i `--card` były identyczną czystą bielą, więc
+  karty nie odróżniały się od tła; statusy (todo/in_progress/done, OK/niski/brak, szkic/zamknięty)
+  renderowały się jako te same szare plakietki. Font Inter ładowany z CDN Google (zakazane).
+- **Rozwiązanie (tylko restyling, bez zmian funkcjonalnych):** pełny system tokenów w
+  `app/assets/css/tailwind.css` (hierarchia powierzchni canvas/surface/inset, marka terakota,
+  semantyczne kolory stanów solid+soft, cieplejsze neutralne, tinted-shadow), samodzielnie
+  hostowane fonty zmienne (`@fontsource-variable/figtree` + `.../bricolage-grotesque`, subset
+  latin-ext → pełne polskie znaki), semantyczne warianty `Badge`, poprawione `Tabs`/`Table`,
+  przeprojektowany shell (`layouts/default.vue`) i strona landing (`components/Landing.vue`).
+  PWA `theme_color` → `#b55424`. Pełny opis w §12.
+- **Pliki:** `app/assets/css/tailwind.css`, `nuxt.config.ts`, `app/layouts/default.vue`,
+  `app/components/Landing.vue`, `app/components/ui/{badge,tabs,table}/*`,
+  `app/components/tasks/{ListView,Kanban}.vue`, `app/components/stock/Levels.vue`,
+  `app/components/reports/{DayNotes,ManagerReport}.vue`, `PRODUCT.md`.
+- **Weryfikacja:** `nuxt build` czysto; Playwright 13/13; kontrast tekstu i plakietek ≥ WCAG AA.
+
 ## 11. Konwencje
 
 - Commity: Conventional Commits.
@@ -470,3 +489,68 @@ działania, 04 live chat + typing w dwóch kontekstach, 08 landing z cennikiem d
 - Wszystkie timestampy: `timestamptz`, czas lokalu wg `branches.timezone`.
 - Komponenty domenowe: PascalCase z prefiksem modułu (`TaskKanban.vue`, `ChatWindow.vue`).
 - Composables zwracają stan reaktywny + akcje; bez fetchowania w komponentach stron poza `useAsyncData`.
+
+## 12. System designu (design system)
+
+> Wiążący dla całego projektu. Źródło prawdy: `app/assets/css/tailwind.css` (tokeny
+> `:root`/`.dark` + `@theme inline`, Tailwind v4 CSS-first) konsumowane przez prymitywy
+> shadcn-vue w `app/components/ui/`. Kolejność zmian: najpierw tokeny, potem prymitywy,
+> na końcu markup stron. Pełny kontekst produktowy: `PRODUCT.md`.
+
+### 12.1 Tożsamość i strategia koloru
+Marka OZMO = **ciepłe, niezawodne narzędzie dla gastronomii/hotelarstwa**, nie chłodny SaaS.
+Ciepło niesie akcent **terakota** + subtelnie ciepły canvas + krojowy font nagłówkowy — nigdy
+beżowe tło ani fioletowe gradienty. Strategia: **restrained** w produkcie (neutralne + jeden
+akcent z intencją), odrobinę odważniej na landingu.
+
+### 12.2 Powierzchnie — hierarchia, która naprawia „zlewanie się"
+Trzy celowe tony (fundament redesignu):
+- `--background` — **canvas** aplikacji, ciepła biel łamana `oklch(0.977 0.004 75)`.
+- `--card` / `--popover` — **powierzchnie** nad canvasem, czysta biel `oklch(1 0 0)`.
+- `--muted` — **wcięcia**: nagłówki tabel, tło segmentów tabów, zebra, drugorzędne chipy.
+Karty (białe) na ciepłym canvasie → strefy czytelne bez ciężkich obramowań. Nigdy karta-w-karcie.
+
+### 12.3 Marka i stany
+- `--primary` terakota `oklch(0.56 0.14 44)` (≈ `#b55424`): filled CTA, aktywna nawigacja,
+  focus ring, linki. Używać **oszczędnie** — jedna akcja główna na strefę.
+- Semantyczna skala stanów (zarezerwowana, nigdy dekoracyjna), każdy w parze **solid** + **soft**
+  (plakietki używają soft): `success` zieleń `~152` (zrobione/opublikowane/OK/na stanie),
+  `warning` bursztyn `~74` (w trakcie/niski stan/szkic/wysoki priorytet), `info` błękit `~242`
+  (do zrobienia/notatka info), `destructive` czerwień `~25` (pilne/problem/brak/usuń).
+- Mapy statusów (wiążące): zadanie status todo→info, in_progress→warning, done→success;
+  priorytet low→outline, normal→secondary, high→warning, urgent→destructive; magazyn OK→success,
+  niski→warning, brak→destructive; raport szkic→warning, zamknięty→success; notatka info→info,
+  problem→danger.
+
+### 12.4 Typografia
+Samodzielnie hostowane fonty zmienne (`@fontsource-variable`, bez CDN), subset latin-ext → pełne
+polskie znaki.
+- **Nagłówki/display — Bricolage Grotesque Variable** (`--font-heading`): `h1–h4` + wordmark,
+  `letter-spacing: -0.015em`, `text-wrap: balance`.
+- **Body/UI — Figtree Variable** (`--font-sans`): humanistyczny, ciepły, czytelny dla osób
+  nietechnicznych. Parowanie na osi kontrastu (humanist body vs display grotesque).
+- Liczby: `tabular-nums` w tabelach i komórkach danych.
+- Skala: tytuł strony `text-2xl`/`3xl` bold · sekcja `text-lg` semibold · body `text-sm`/`base`
+  · meta `text-xs`/`sm` muted. Bez WERSALIKÓW w polskim.
+
+### 12.5 Kształt, elewacja, layout
+- `--radius` 0.625rem (10px); karty/sheety `rounded-xl` (14px); inputy/przyciski `md`; plakietki pill.
+  Jeden system promieni (bez 24px+).
+- Cienie ocieplone (`--shadow-*` w `oklch(0.24 0.03 55 / …)`), nigdy czysta czerń; karty `shadow-sm`,
+  popovery/sheety/dialogi `shadow-md`/`lg`. Obramowania o krok mocniejsze niż stock.
+- Shell: wydzielona strefa **sidebar** (`--sidebar`, cofa się), **sticky** rozmyty header, treść na
+  canvasie; mobile: rozmyty **bottom-nav** z safe-area, cele dotykowe ≥44px. Aktywna nawigacja =
+  marka (`bg-primary/10 text-primary font-semibold`). Rytm sekcji `space-y-6`.
+- Strefa nagłówka strony spójna wszędzie: `h1` + linia kontekstu (muted) + jedna akcja główna.
+
+### 12.6 Prymitywy (delty względem stock shadcn)
+- **Badge** — dodane warianty soft: `success`/`warning`/`info`/`danger`.
+- **Tabs** — aktywny trigger jako wyraźna biała karta na muted torze.
+- **Table** — pasek nagłówka `muted`, małe semibold muted etykiety, `tabular-nums`, czytelne linie.
+- **Card/Button/Input** — dziedziczą tokeny; primary terakota, focus ring marki.
+
+### 12.7 Dostępność i anty-slop
+- Kontrast body i plakietek zweryfikowany ≥ WCAG AA (soft-fg = ciemny koniec rampy danego hue).
+- Zakazane (nie przywracać): fioletowo-niebieskie gradienty AI, gradient-text, glassmorphism
+  domyślnie, beżowy/kremowy body, ikona-kafelek-nad-nagłówkiem, wersalikowe „eyebrow" nad każdą
+  sekcją, karta-w-karcie, kolorowe paski-boczne, Inter-do-wszystkiego, fonty z CDN.

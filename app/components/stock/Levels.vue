@@ -136,14 +136,8 @@ defineExpose({ refresh })
             <TableCell class="text-right tabular-nums text-muted-foreground">{{ r.min_stock }}</TableCell>
             <TableCell class="text-right">
               <Badge v-if="status(r) === 'brak'" variant="destructive">Brak</Badge>
-              <Badge
-                v-else-if="status(r) === 'niski'"
-                class="border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                variant="outline"
-              >
-                Niski stan
-              </Badge>
-              <Badge v-else variant="secondary">OK</Badge>
+              <Badge v-else-if="status(r) === 'niski'" variant="warning">Niski stan</Badge>
+              <Badge v-else variant="success">OK</Badge>
             </TableCell>
           </TableRow>
         </TableBody>

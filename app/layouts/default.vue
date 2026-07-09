@@ -61,23 +61,29 @@ async function logout() {
   <div class="min-h-svh bg-background">
     <!-- Desktop sidebar -->
     <aside
-      class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-card lg:flex"
+      class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex"
     >
-      <div class="flex h-16 flex-col justify-center px-6">
-        <span class="text-xl font-bold tracking-tight">OZMO</span>
-        <span v-if="activeOrg" class="truncate text-xs text-muted-foreground">
-          {{ activeOrg.name }}
+      <div class="flex h-16 items-center gap-2.5 px-5">
+        <span
+          class="grid size-8 shrink-0 place-items-center rounded-lg bg-primary font-heading text-base font-bold text-primary-foreground"
+          aria-hidden="true"
+        >O</span>
+        <span class="flex min-w-0 flex-col leading-tight">
+          <span class="font-heading text-lg font-bold tracking-tight text-foreground">OZMO</span>
+          <span v-if="activeOrg" class="truncate text-xs text-muted-foreground">
+            {{ activeOrg.name }}
+          </span>
         </span>
       </div>
-      <nav class="flex-1 space-y-1 px-3 py-2">
+      <nav class="flex-1 space-y-0.5 px-3 py-2">
         <NuxtLink
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          active-class="bg-accent text-accent-foreground"
+          class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          active-class="bg-primary/10 text-primary font-semibold hover:bg-primary/10 hover:text-primary"
         >
-          <component :is="item.icon" class="size-4" />
+          <component :is="item.icon" class="size-[18px]" />
           {{ item.label }}
         </NuxtLink>
       </nav>
@@ -131,10 +137,10 @@ async function logout() {
     <div class="lg:pl-60">
       <!-- Top bar (branch picker + notifications; mobile also shows logo + menu) -->
       <header
-        class="flex h-14 items-center justify-between gap-3 border-b px-4"
+        class="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70"
       >
         <div class="flex items-center gap-2">
-          <span class="text-lg font-bold tracking-tight lg:hidden">OZMO</span>
+          <span class="font-heading text-lg font-bold tracking-tight lg:hidden">OZMO</span>
           <LayoutBranchPicker />
         </div>
         <div class="flex items-center gap-1">
@@ -154,8 +160,8 @@ async function logout() {
                 v-for="item in navItems"
                 :key="item.to"
                 :to="item.to"
-                class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                active-class="bg-accent text-accent-foreground"
+                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                active-class="bg-primary/10 text-primary font-semibold"
                 @click="sheetOpen = false"
               >
                 <component :is="item.icon" class="size-4" />
@@ -166,8 +172,8 @@ async function logout() {
             <div class="space-y-1 px-2">
               <NuxtLink
                 to="/settings"
-                class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                active-class="bg-accent text-accent-foreground"
+                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                active-class="bg-primary/10 text-primary font-semibold"
                 @click="sheetOpen = false"
               >
                 <Settings class="size-4" />
@@ -193,23 +199,23 @@ async function logout() {
 
     <!-- Mobile bottom navigation -->
     <nav
-      class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-card lg:hidden"
+      class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
       <NuxtLink
         v-for="item in primaryItems"
         :key="item.to"
         :to="item.to"
-        class="flex flex-col items-center gap-1 py-2 text-[11px] text-muted-foreground"
+        class="flex min-h-[3.25rem] flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-muted-foreground transition-colors"
         active-class="text-primary"
       >
-        <component :is="item.icon" class="size-5" />
+        <component :is="item.icon" class="size-[22px]" />
         {{ item.label }}
       </NuxtLink>
       <button
-        class="flex flex-col items-center gap-1 py-2 text-[11px] text-muted-foreground"
+        class="flex min-h-[3.25rem] flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-muted-foreground transition-colors"
         @click="sheetOpen = true"
       >
-        <Menu class="size-5" />
+        <Menu class="size-[22px]" />
         Więcej
       </button>
     </nav>

@@ -32,11 +32,17 @@ const priorityLabels: Record<TaskPriority, string> = {
   high: 'Wysoki',
   urgent: 'Pilny',
 }
-const priorityVariant: Record<TaskPriority, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive' | 'success' | 'warning' | 'info'
+const priorityVariant: Record<TaskPriority, BadgeVariant> = {
   low: 'outline',
   normal: 'secondary',
-  high: 'default',
+  high: 'warning',
   urgent: 'destructive',
+}
+const statusVariant: Record<TaskStatus, BadgeVariant> = {
+  todo: 'info',
+  in_progress: 'warning',
+  done: 'success',
 }
 const priorityWeight: Record<TaskPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
 
@@ -121,7 +127,7 @@ function doneCount(t: TaskRow) {
             <Badge :variant="priorityVariant[t.priority]" class="text-[10px]">
               {{ priorityLabels[t.priority] }}
             </Badge>
-            <Badge variant="outline" class="text-[10px]">{{ statusLabels[t.status] }}</Badge>
+            <Badge :variant="statusVariant[t.status]" class="text-[10px]">{{ statusLabels[t.status] }}</Badge>
             <span v-if="t.due_at" class="flex items-center gap-1">
               <CalendarClock class="size-3" /> {{ formatDateTime(t.due_at) }}
             </span>

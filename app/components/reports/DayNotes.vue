@@ -193,7 +193,7 @@ async function remove(n: Note) {
       <li v-for="n in notes" :key="n.id" class="rounded-lg border p-3">
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-center gap-2">
-            <Badge :variant="n.severity === 'issue' ? 'destructive' : 'secondary'">
+            <Badge :variant="n.severity === 'issue' ? 'danger' : 'info'">
               {{ n.severity === 'issue' ? 'Problem' : 'Info' }}
             </Badge>
             <span class="text-sm font-medium">{{ nameOf(n.author_id) }}</span>

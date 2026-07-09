@@ -238,7 +238,7 @@ function displayValue(s: SectionRow, f: FieldDef) {
       <!-- Nagłówek: status + postęp -->
       <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
         <div class="flex items-center gap-2">
-          <Badge :variant="report.status === 'closed' ? 'default' : 'secondary'" class="gap-1">
+          <Badge :variant="report.status === 'closed' ? 'success' : 'warning'" class="gap-1">
             <Lock v-if="report.status === 'closed'" class="size-3" />
             {{ report.status === 'closed' ? 'Zamknięty' : 'Szkic' }}
           </Badge>
