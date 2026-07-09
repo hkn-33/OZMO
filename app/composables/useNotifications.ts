@@ -18,6 +18,10 @@ export interface NotificationRow {
     starts_at?: string
     ends_at?: string
     position?: string
+    product_id?: string
+    name?: string
+    qty?: number
+    min_stock?: number
   }
   created_at: string
   read_at: string | null

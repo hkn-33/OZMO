@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bell, CheckCheck, UserPlus, AtSign, MessageSquare, Clock, CalendarDays } from '@lucide/vue'
+import { Bell, CheckCheck, UserPlus, AtSign, MessageSquare, Clock, CalendarDays, PackageX } from '@lucide/vue'
 import type { Component } from 'vue'
 import { formatRelative } from '~/lib/utils'
 import type { NotificationRow, NotificationType } from '~/composables/useNotifications'
@@ -20,6 +20,7 @@ const typeIcon: Record<NotificationType, Component> = {
   comment_on_my_task: MessageSquare,
   task_due_soon: Clock,
   shift_published: CalendarDays,
+  stock_low: PackageX,
 }
 const typeLabel: Record<NotificationType, string> = {
   task_assigned: 'Przypisano Ci zadanie',
@@ -27,6 +28,7 @@ const typeLabel: Record<NotificationType, string> = {
   comment_on_my_task: 'Nowy komentarz do zadania',
   task_due_soon: 'Zbliża się termin zadania',
   shift_published: 'Opublikowano Twój grafik',
+  stock_low: 'Niski stan magazynowy',
 }
 
 async function openNotification(n: NotificationRow) {
@@ -34,6 +36,8 @@ async function openNotification(n: NotificationRow) {
   open.value = false
   if (n.type === 'shift_published') {
     await navigateTo('/schedule')
+  } else if (n.type === 'stock_low') {
+    await navigateTo('/stock')
   } else if (n.payload?.task_id) {
     await navigateTo({ path: '/tasks', query: { task: n.payload.task_id } })
   }
@@ -82,8 +86,8 @@ async function openNotification(n: NotificationRow) {
           <component :is="typeIcon[n.type]" class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <div class="min-w-0 flex-1">
             <p class="font-medium leading-tight">{{ typeLabel[n.type] }}</p>
-            <p v-if="n.payload?.title" class="truncate text-muted-foreground">
-              {{ n.payload.title }}
+            <p v-if="n.payload?.title || n.payload?.name" class="truncate text-muted-foreground">
+              {{ n.payload.title ?? n.payload.name }}
             </p>
             <p class="mt-0.5 text-xs text-muted-foreground">
               {{ formatRelative(n.created_at) }}

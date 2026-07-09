@@ -114,6 +114,49 @@ export type Database = {
           },
         ]
       }
+      branch_product_settings: {
+        Row: {
+          branch_id: string
+          min_stock: number
+          org_id: string
+          product_id: string
+        }
+        Insert: {
+          branch_id: string
+          min_stock?: number
+          org_id: string
+          product_id: string
+        }
+        Update: {
+          branch_id?: string
+          min_stock?: number
+          org_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_product_settings_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_product_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_product_settings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           active: boolean
@@ -329,6 +372,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "checklist_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cost_entries: {
+        Row: {
+          amount: number
+          branch_id: string
+          category: Database["public"]["Enums"]["cost_category"]
+          created_at: string
+          created_by: string | null
+          date: string
+          id: string
+          note: string | null
+          org_id: string
+          source: Database["public"]["Enums"]["cost_source"]
+        }
+        Insert: {
+          amount?: number
+          branch_id: string
+          category: Database["public"]["Enums"]["cost_category"]
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          note?: string | null
+          org_id: string
+          source?: Database["public"]["Enums"]["cost_source"]
+        }
+        Update: {
+          amount?: number
+          branch_id?: string
+          category?: Database["public"]["Enums"]["cost_category"]
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          note?: string | null
+          org_id?: string
+          source?: Database["public"]["Enums"]["cost_source"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_entries_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_entries_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -615,6 +712,44 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          active: boolean
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+          unit: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+          unit?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -638,6 +773,57 @@ export type Database = {
           phone?: string | null
         }
         Relationships: []
+      }
+      revenue_entries: {
+        Row: {
+          amount: number
+          branch_id: string
+          created_at: string
+          created_by: string | null
+          date: string
+          id: string
+          note: string | null
+          org_id: string
+          source: string
+        }
+        Insert: {
+          amount?: number
+          branch_id: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          note?: string | null
+          org_id: string
+          source?: string
+        }
+        Update: {
+          amount?: number
+          branch_id?: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          note?: string | null
+          org_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_entries_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenue_entries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shift_templates: {
         Row: {
@@ -737,6 +923,164 @@ export type Database = {
           },
           {
             foreignKeyName: "shifts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_levels: {
+        Row: {
+          branch_id: string
+          org_id: string
+          product_id: string
+          qty: number
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          org_id: string
+          product_id: string
+          qty?: number
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          org_id?: string
+          product_id?: string
+          qty?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_levels_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_levels_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_levels_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          branch_id: string
+          created_at: string
+          created_by: string | null
+          doc_ref: string | null
+          id: string
+          note: string | null
+          org_id: string
+          product_id: string
+          qty_delta: number
+          supplier_id: string | null
+          type: Database["public"]["Enums"]["stock_movement_type"]
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          created_by?: string | null
+          doc_ref?: string | null
+          id?: string
+          note?: string | null
+          org_id: string
+          product_id: string
+          qty_delta: number
+          supplier_id?: string | null
+          type: Database["public"]["Enums"]["stock_movement_type"]
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          created_by?: string | null
+          doc_ref?: string | null
+          id?: string
+          note?: string | null
+          org_id?: string
+          product_id?: string
+          qty_delta?: number
+          supplier_id?: string | null
+          type?: Database["public"]["Enums"]["stock_movement_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          note: string | null
+          org_id: string
+          phone: string | null
+        }
+        Insert: {
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          org_id: string
+          phone?: string | null
+        }
+        Update: {
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          org_id?: string
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -956,6 +1300,8 @@ export type Database = {
     Enums: {
       branch_role: "manager" | "employee"
       chat_channel_type: "org" | "branch" | "custom"
+      cost_category: "food" | "beverage" | "labor" | "other"
+      cost_source: "manual" | "stock" | "payroll"
       day_note_severity: "info" | "issue"
       manager_report_status: "draft" | "closed"
       notification_type:
@@ -964,8 +1310,15 @@ export type Database = {
         | "comment_on_my_task"
         | "task_due_soon"
         | "shift_published"
+        | "stock_low"
       org_role: "owner" | "admin" | "member"
       report_section: "utarg" | "kasa" | "sanepid" | "magazyn" | "zmiana"
+      stock_movement_type:
+        | "delivery"
+        | "usage"
+        | "waste"
+        | "correction"
+        | "transfer"
       task_priority: "low" | "normal" | "high" | "urgent"
       task_status: "todo" | "in_progress" | "done"
     }
@@ -1100,6 +1453,8 @@ export const Constants = {
     Enums: {
       branch_role: ["manager", "employee"],
       chat_channel_type: ["org", "branch", "custom"],
+      cost_category: ["food", "beverage", "labor", "other"],
+      cost_source: ["manual", "stock", "payroll"],
       day_note_severity: ["info", "issue"],
       manager_report_status: ["draft", "closed"],
       notification_type: [
@@ -1108,9 +1463,17 @@ export const Constants = {
         "comment_on_my_task",
         "task_due_soon",
         "shift_published",
+        "stock_low",
       ],
       org_role: ["owner", "admin", "member"],
       report_section: ["utarg", "kasa", "sanepid", "magazyn", "zmiana"],
+      stock_movement_type: [
+        "delivery",
+        "usage",
+        "waste",
+        "correction",
+        "transfer",
+      ],
       task_priority: ["low", "normal", "high", "urgent"],
       task_status: ["todo", "in_progress", "done"],
     },
