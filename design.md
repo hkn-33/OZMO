@@ -237,6 +237,18 @@ Decyzje z researchu:
 - **Lokalny Supabase:** `enable_confirmations = false` (domyślnie w `config.toml`) — rejestracja od razu tworzy sesję (autoconfirm). Zweryfikowano signup + login (password grant) przez API GoTrue oraz redirect `/` → `/auth/login` dla niezalogowanych.
 - Nazwa pakietu ustawiona na `ozmo`.
 
+### Odstępstwa z fazy 1 (rdzeń multi-tenant M7, 2026-07-09)
+
+- **Zaproszenia bez wysyłki e-mail (MVP).** `POST /api/invitations` zwraca link `/auth/invite/{token}` do skopiowania i przekazania ręcznie; realną wysyłkę maila dodamy później. Zaproszenia oczekujące można skopiować ponownie z zakładki „Zaproszenia" na `/people`.
+- **Tworzenie zaproszenia idzie przez klienta z sesją użytkownika (RLS), nie service_role.** `serverSupabaseClient` + polityka `invitations_insert_admin` egzekwują, że tylko org admin może dodać zaproszenie — brak potrzeby service_role przy tworzeniu. `service_role` używany jest wyłącznie w `POST /api/invitations/accept` (zaproszony nie jest jeszcze członkiem, więc RLS by go zablokował).
+- **`serverSupabaseUser` (@nuxtjs/supabase 2.x) zwraca *claims* JWT, nie obiekt `User`.** Id użytkownika to `user.sub` (nie `user.id`), e-mail to `user.email`. Kod server route korzysta z `user.sub`.
+- **Polityka SELECT na `branches` używa `private.is_org_admin(org_id) OR private.is_branch_member(id)`, a nie `has_branch_access(id)`.** Powód: `has_branch_access` odczytuje tabelę `branches` w środku funkcji `stable security definer`, przez co przy `INSERT ... RETURNING` (używanym przez `.insert().select()` w supabase-js) polityka SELECT nie „widzi" świeżo wstawionego wiersza i insert kończy się błędem RLS. Dodano pomocniczą `private.is_branch_member(branch_id)` (czyta tylko `branch_members`). `has_branch_access` i `is_branch_manager` pozostają dla `branch_members` oraz przyszłych tabel branch-scoped (tam nie ma self-referencji do `branches`).
+- **Granty tabelowe także dla `service_role`.** Mimo że `service_role` omija RLS (BYPASSRLS), lokalnie potrzebuje jawnych uprawnień tabelowych (`GRANT ... TO authenticated, service_role`), inaczej `permission denied` w route accept.
+- **Pomocnicza `private.shares_org(user_id)`** dodana ponad zestaw z §4 — dla polityki SELECT na `profiles` (widoczność profili osób z tej samej organizacji).
+- **Klucz serwerowy w env: `SUPABASE_SERVICE_KEY`.** Moduł loguje ostrzeżenie o deprecacji (sugeruje `NUXT_SUPABASE_SECRET_KEY`), ale zmienna działa. `serverSupabaseServiceRole` bierze `secretKey || serviceKey`.
+- **Kontekst organizacji:** composable `useOrg()` (aktywna org w cookie `ozmo_active_org`, przełącznik w menu użytkownika przy >1 org). Globalny middleware `org-context` kieruje użytkowników bez organizacji na `/onboarding`. Zaproszenie przez wylogowanego użytkownika zachowuje token w query `?next=` przy logowaniu/rejestracji.
+- **Zweryfikowano E2E (20/20) na lokalnym stacku + dev server:** RPC `create_organization` (twórca = owner), trigger profilu, tworzenie oddziału (admin), pełny cykl zaproszenia przez HTTP (utworzenie → akceptacja → idempotencja), guard 401 bez sesji, 403 dla nie-admina, izolacja RLS (user B nie widzi cudzej organizacji ani nieprzypisanych oddziałów, nie tworzy oddziałów), widoczność profili wg wspólnej organizacji.
+
 ## 11. Konwencje
 
 - Commity: Conventional Commits.

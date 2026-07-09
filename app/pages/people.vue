@@ -200,7 +200,7 @@ async function sendInvite() {
     await refresh()
   } catch (e: any) {
     toast.error('Nie udało się utworzyć zaproszenia', {
-      description: e?.statusMessage ?? e?.message,
+      description: e?.data?.message ?? e?.message,
     })
   } finally {
     inviting.value = false
@@ -222,7 +222,7 @@ async function revokeInvite(inv: Invitation) {
 }
 
 function inviteLinkFor(inv: Invitation) {
-  return `${window.location.origin}/auth/invite/${inv.id}`
+  return `${window.location.origin}/auth/invite/${inv.token}`
 }
 
 const branchName = (id: string) =>

@@ -4,6 +4,7 @@ import { toast } from 'vue-sonner'
 definePageMeta({ layout: 'auth' })
 
 const supabase = useSupabaseClient()
+const route = useRoute()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -23,7 +24,7 @@ async function onSubmit() {
 
   // Lokalnie potwierdzenia e-mail są wyłączone — użytkownik jest od razu zalogowany.
   if (data.session) {
-    await navigateTo('/')
+    await navigateTo((route.query.next as string) || '/')
     return
   }
 
@@ -71,7 +72,10 @@ async function onSubmit() {
     </CardContent>
     <CardFooter class="justify-center text-sm text-muted-foreground">
       Masz już konto?
-      <NuxtLink to="/auth/login" class="ml-1 font-medium text-primary hover:underline">
+      <NuxtLink
+        :to="{ path: '/auth/login', query: route.query }"
+        class="ml-1 font-medium text-primary hover:underline"
+      >
         Zaloguj się
       </NuxtLink>
     </CardFooter>

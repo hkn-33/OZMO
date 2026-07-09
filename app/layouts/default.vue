@@ -8,9 +8,11 @@ import {
   Package,
   FileText,
   Users,
+  Building2,
   Wallet,
   Menu,
   LogOut,
+  Check,
 } from '@lucide/vue'
 
 type NavItem = {
@@ -27,7 +29,8 @@ const navItems: NavItem[] = [
   { label: 'Grafik', to: '/schedule', icon: CalendarDays, primary: true },
   { label: 'Magazyn', to: '/stock', icon: Package },
   { label: 'Raporty', to: '/reports', icon: FileText },
-  { label: 'Zespół', to: '/team', icon: Users },
+  { label: 'Oddziały', to: '/branches', icon: Building2 },
+  { label: 'Zespół', to: '/people', icon: Users },
   { label: 'Koszty', to: '/costs', icon: Wallet },
 ]
 
@@ -36,6 +39,9 @@ const primaryItems = navItems.filter((i) => i.primary)
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const sheetOpen = ref(false)
+
+const { memberships, activeOrg, activeOrgId, setActive, load } = useOrg()
+await load()
 
 const userLabel = computed(() => user.value?.email ?? 'Konto')
 const userInitial = computed(() => (user.value?.email?.[0] ?? '?').toUpperCase())
@@ -52,8 +58,11 @@ async function logout() {
     <aside
       class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-card lg:flex"
     >
-      <div class="flex h-16 items-center px-6 text-xl font-bold tracking-tight">
-        OZMO
+      <div class="flex h-16 flex-col justify-center px-6">
+        <span class="text-xl font-bold tracking-tight">OZMO</span>
+        <span v-if="activeOrg" class="truncate text-xs text-muted-foreground">
+          {{ activeOrg.name }}
+        </span>
       </div>
       <nav class="flex-1 space-y-1 px-3 py-2">
         <NuxtLink
@@ -82,6 +91,23 @@ async function logout() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="w-56">
             <DropdownMenuLabel class="truncate">{{ userLabel }}</DropdownMenuLabel>
+            <template v-if="memberships.length > 1">
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel class="text-xs text-muted-foreground">
+                Organizacja
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                v-for="m in memberships"
+                :key="m.org_id"
+                @select="setActive(m.org_id)"
+              >
+                <Check
+                  class="mr-2 size-4"
+                  :class="m.org_id === activeOrgId ? 'opacity-100' : 'opacity-0'"
+                />
+                <span class="truncate">{{ m.organizations.name }}</span>
+              </DropdownMenuItem>
+            </template>
             <DropdownMenuSeparator />
             <DropdownMenuItem @select="logout">
               <LogOut class="mr-2 size-4" />

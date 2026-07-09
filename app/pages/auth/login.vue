@@ -4,6 +4,7 @@ import { toast } from 'vue-sonner'
 definePageMeta({ layout: 'auth' })
 
 const supabase = useSupabaseClient()
+const route = useRoute()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -20,7 +21,7 @@ async function onSubmit() {
     toast.error('Nie udało się zalogować', { description: error.message })
     return
   }
-  await navigateTo('/')
+  await navigateTo((route.query.next as string) || '/')
 }
 </script>
 
@@ -60,7 +61,10 @@ async function onSubmit() {
     </CardContent>
     <CardFooter class="justify-center text-sm text-muted-foreground">
       Nie masz konta?
-      <NuxtLink to="/auth/register" class="ml-1 font-medium text-primary hover:underline">
+      <NuxtLink
+        :to="{ path: '/auth/register', query: route.query }"
+        class="ml-1 font-medium text-primary hover:underline"
+      >
         Zarejestruj się
       </NuxtLink>
     </CardFooter>
