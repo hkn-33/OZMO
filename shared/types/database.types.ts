@@ -104,6 +104,152 @@ export type Database = {
           },
         ]
       }
+      chat_channels: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+          type: Database["public"]["Enums"]["chat_channel_type"]
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+          type: Database["public"]["Enums"]["chat_channel_type"]
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+          type?: Database["public"]["Enums"]["chat_channel_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_channels_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_channels_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_members: {
+        Row: {
+          channel_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_members_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          author_id: string
+          body: string
+          branch_id: string | null
+          channel_id: string
+          created_at: string
+          id: string
+          org_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          branch_id?: string | null
+          channel_id: string
+          created_at?: string
+          id?: string
+          org_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          branch_id?: string | null
+          channel_id?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_reads: {
+        Row: {
+          channel_id: string
+          last_read_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          last_read_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          last_read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_reads_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_templates: {
         Row: {
           created_at: string
@@ -135,6 +281,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "checklist_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      day_notes: {
+        Row: {
+          author_id: string
+          body: string
+          branch_id: string
+          created_at: string
+          date: string
+          id: string
+          org_id: string
+          severity: Database["public"]["Enums"]["day_note_severity"]
+        }
+        Insert: {
+          author_id: string
+          body: string
+          branch_id: string
+          created_at?: string
+          date?: string
+          id?: string
+          org_id: string
+          severity?: Database["public"]["Enums"]["day_note_severity"]
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          branch_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          org_id?: string
+          severity?: Database["public"]["Enums"]["day_note_severity"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_notes_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_notes_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -192,6 +386,89 @@ export type Database = {
           },
           {
             foreignKeyName: "invitations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manager_report_sections: {
+        Row: {
+          completed: boolean
+          data: Json
+          id: string
+          report_id: string
+          section: Database["public"]["Enums"]["report_section"]
+        }
+        Insert: {
+          completed?: boolean
+          data?: Json
+          id?: string
+          report_id: string
+          section: Database["public"]["Enums"]["report_section"]
+        }
+        Update: {
+          completed?: boolean
+          data?: Json
+          id?: string
+          report_id?: string
+          section?: Database["public"]["Enums"]["report_section"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_report_sections_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "manager_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manager_reports: {
+        Row: {
+          branch_id: string
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          created_by: string | null
+          date: string
+          id: string
+          org_id: string
+          status: Database["public"]["Enums"]["manager_report_status"]
+        }
+        Insert: {
+          branch_id: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          org_id: string
+          status?: Database["public"]["Enums"]["manager_report_status"]
+        }
+        Update: {
+          branch_id?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          org_id?: string
+          status?: Database["public"]["Enums"]["manager_report_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_reports_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_reports_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -517,12 +794,16 @@ export type Database = {
     }
     Enums: {
       branch_role: "manager" | "employee"
+      chat_channel_type: "org" | "branch" | "custom"
+      day_note_severity: "info" | "issue"
+      manager_report_status: "draft" | "closed"
       notification_type:
         | "task_assigned"
         | "mentioned"
         | "comment_on_my_task"
         | "task_due_soon"
       org_role: "owner" | "admin" | "member"
+      report_section: "utarg" | "kasa" | "sanepid" | "magazyn" | "zmiana"
       task_priority: "low" | "normal" | "high" | "urgent"
       task_status: "todo" | "in_progress" | "done"
     }
@@ -656,6 +937,9 @@ export const Constants = {
   public: {
     Enums: {
       branch_role: ["manager", "employee"],
+      chat_channel_type: ["org", "branch", "custom"],
+      day_note_severity: ["info", "issue"],
+      manager_report_status: ["draft", "closed"],
       notification_type: [
         "task_assigned",
         "mentioned",
@@ -663,6 +947,7 @@ export const Constants = {
         "task_due_soon",
       ],
       org_role: ["owner", "admin", "member"],
+      report_section: ["utarg", "kasa", "sanepid", "magazyn", "zmiana"],
       task_priority: ["low", "normal", "high", "urgent"],
       task_status: ["todo", "in_progress", "done"],
     },
