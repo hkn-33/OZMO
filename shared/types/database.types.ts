@@ -760,6 +760,7 @@ export type Database = {
           created_by: string | null
           id: string
           industry: string | null
+          is_public_demo: boolean
           name: string
           slug: string
         }
@@ -768,6 +769,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           industry?: string | null
+          is_public_demo?: boolean
           name: string
           slug: string
         }
@@ -776,6 +778,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           industry?: string | null
+          is_public_demo?: boolean
           name?: string
           slug?: string
         }
@@ -1593,6 +1596,7 @@ export type Database = {
               created_by: string | null
               id: string
               industry: string | null
+              is_public_demo: boolean
               name: string
               slug: string
             }
@@ -1610,6 +1614,7 @@ export type Database = {
               created_by: string | null
               id: string
               industry: string | null
+              is_public_demo: boolean
               name: string
               slug: string
             }

@@ -30,6 +30,20 @@ export default defineEventHandler(async (event) => {
   const uid = user.sub as string
   const admin = serverSupabaseServiceRole<Database>(event)
 
+  // --- Blokada: konto publicznego demo (współdzielone, resetowane co godzinę) ---
+  const { data: demoMembership } = await admin
+    .from('org_members')
+    .select('org_id, organizations!inner(is_public_demo)')
+    .eq('user_id', uid)
+    .eq('organizations.is_public_demo', true)
+    .limit(1)
+  if ((user.email as string) === 'demo-public@users.ozmo.local' || (demoMembership?.length ?? 0) > 0) {
+    throw createError({
+      statusCode: 403,
+      message: 'Konto demo jest chronione i nie może zostać usunięte.',
+    })
+  }
+
   // --- Blokada: ostatni owner organizacji z innymi członkami ---
   const { data: ownedOrgs, error: ownErr } = await admin
     .from('org_members')

@@ -10,6 +10,7 @@
 - Użytkownicy: właściciel sieci, menadżerowie lokali, pracownicy zmianowi.
 - Priorytet UX: **mobile-first**, prostota — pracownicy nie są techniczni. Maks. 2–3 kliknięcia do każdej codziennej akcji.
 - Języki UI: polski (na start).
+- **Model i licencja (faza 11):** OZMO jest **open source na licencji AGPL-3.0** (self-host za darmo). Źródłem przychodu jest **wersja hostowana** (płatna, z utrzymaniem i wsparciem). Repo: `https://github.com/hkn-33/OZMO`. Szczegóły techniczne self-hostu: `README.md`.
 
 ## 2. Stack techniczny
 
@@ -213,6 +214,7 @@ design.md               # TEN PLIK
 | 7 | Feedback: landing+cennik, subskrypcje+demo (M11), users po username, powiązania zadań, wskaźnik pisania, widok sieci magazynu, fix realtime, konto testowe | ✅ |
 | 8 | Redesign wizualny: system tokenów, marka terakota, hostowane fonty, hierarchia powierzchni | ✅ |
 | 9 | Genericyzacja (branże, konfigurowalne kategorie kosztów i sekcje raportu), inwentaryzacja (M12), załączniki, pulpit, wyszukiwarka Cmd+K | ✅ |
+| 11 | Publiczne demo z resetem godzinowym (pg_cron), hardening produkcyjny (granty SECURITY DEFINER), open-source (AGPL-3.0 + model hostowany) | ✅ |
 
 Każda faza kończy się działającą aplikacją (migracje + UI + realtime tam gdzie trzeba).
 
@@ -626,3 +628,62 @@ polskie znaki.
 - Zakazane (nie przywracać): fioletowo-niebieskie gradienty AI, gradient-text, glassmorphism
   domyślnie, beżowy/kremowy body, ikona-kafelek-nad-nagłówkiem, wersalikowe „eyebrow" nad każdą
   sekcją, karta-w-karcie, kolorowe paski-boczne, Inter-do-wszystkiego, fonty z CDN.
+
+### Odstępstwa z fazy 11 (publiczne demo + hardening + open-source, 2026-07-10)
+
+Dwie migracje: `20260710100000_phase11_public_demo.sql`, `20260710100100_phase11_harden_definer.sql`.
+
+**1. Publiczne demo z resetem godzinowym.** `organizations.is_public_demo bool`. Funkcja
+`private.reset_demo_org()` (security definer, `search_path=''`): znajduje org z `is_public_demo`,
+kasuje **dane domenowe** (zadania+dzieci, wiadomości czatu — kanały zostają, notatki dnia, raporty
+menadżerskie+sekcje, spisy+pozycje, ruchy i stany magazynowe, koszty, przychody, zmiany,
+dostępność, powiadomienia członków) i **zostawia strukturę** (org, oddziały, członkowie, szablony,
+kategorie kosztów, defy sekcji, produkty, dostawcy, ustawienia min. stanów), po czym re-seeduje
+kompaktowy, żywy zestaw z **czasami względnymi** (`now() - interval`), więc dane zawsze wyglądają
+świeżo. **Idempotentne** — liczby wierszy stabilne między uruchomieniami (zweryfikowane 3× SQL:
+tasks 4 / chat 4 / day_notes 2 / reports 1 / movements 10 / levels 8 / cost 40 / revenue 21 /
+shifts 3). Harmonogram `pg_cron` `0 * * * *` → `select private.reset_demo_org()`; `create extension`
++ `cron.schedule` w blokach `DO` tolerancyjnych na brak rozszerzenia (lokalnie pg_cron 1.6.4 w
+obrazie Supabase — działa).
+- **Ochrona konta demo (server-side):** trigger `before update on auth.users`
+  (`private.protect_demo_user`) blokuje zmianę `encrypted_password` dla `demo-public@users.ozmo.local`
+  (GoTrue pisze hasło wprost do `auth.users`, więc to realny punkt egzekucji; zwykłe logowania nie
+  ruszają hasła → przechodzą). Route `POST /api/account/delete` odrzuca (403) użytkownika będącego
+  członkiem org `is_public_demo` lub o e-mailu demo. `/settings` ukrywa zmianę hasła i usunięcie
+  konta w trybie demo (pełna swoboda pozostałych akcji — reset i tak wszystko naprawia; org, oddziały
+  i konto nigdy nie są kasowane).
+- **UI:** composable `useDemo()` (`enterDemo()` — logowanie `demo-public`/`OzmoDemo2026`, jawne z
+  założenia, → pulpit). Landing: przycisk „Wypróbuj demo" w nagłówku i jako sekundarne CTA w hero +
+  link „Otwórz publiczne demo" przy cenniku. Globalny **baner demo** w `layouts/default.vue` (gdy
+  aktywna org `is_public_demo`): pasek `warning-soft` „Tryb demo — możesz wszystko klikać i tworzyć.
+  Dane resetują się co godzinę." + „Załóż własne konto", zamykany na sesję (`useState`/`ref` w setupie
+  — wraca po twardym reloadzie). `useOrg` wystawia `isPublicDemo`.
+- **Seed (`seed.sql`):** drugi, niezależnie zabezpieczony blok tworzy usera `demo-public`, org
+  „OZMO Demo" (`is_public_demo`, plan `network`, branża gastronomia → preset szablonów/kategorii/defów),
+  2 oddziały, właściciela + 3 pracowników, dostawców, 8 produktów + min. stany (Kawa ziarnista min 20,
+  by była widocznie poniżej stanu), a treść zasila wywołaniem `private.reset_demo_org()` — seed i
+  reset trzymają się jednej definicji danych.
+
+**2. Hardening produkcyjny (advisory).** Migracja odbiera `execute` rolom `anon, authenticated,
+public` na **wszystkich** funkcjach `public` `SECURITY DEFINER` będących triggerami / helperami
+wewnętrznymi (Supabase domyślnie grantuje execute publicznym rolom, więc `revoke from public` nie
+wystarcza — potrzebny jawny `anon, authenticated`). Lista 21 funkcji (enumerowana z migracji,
+przez `to_regprocedure` tolerancyjnie — pomija sygnatury nieobecne w danym środowisku, np.
+supabase-managed `public.rls_auto_enable` na chmurze). **Zachowane RPC** (wywoływane z klienta,
+autoryzują się wewnętrznie): `create_organization` (1- i 2-arg), `copy_week_shifts`,
+`close_stocktake`, `apply_industry_preset`. Advisor security (chmura): **przed 52 ostrzeżenia
+`*_security_definer_function_executable`** (26 funkcji × anon/authenticated) → **po 10** (5 zachowanych
+sygnatur RPC × 2 role) — pozostałe są celowe.
+
+**3. Open-source (AGPL + model hostowany).** `LICENSE` — pełny tekst GNU AGPL-3.0. `README.md` —
+przepisany (polski): czym jest OZMO, moduły, stack, self-host quick start, konto demo, licencja i
+model (self-host darmowy, hosted płatny). Landing: czwarta cicha karta cennika „Self-host — za darmo,
+na własnym serwerze (AGPL)" + link do repo GitHub; stopka z linkiem GitHub. Repo:
+`https://github.com/hkn-33/OZMO`.
+
+**Weryfikacja (lokalnie):** `supabase db reset` (21 migracji + seed) czysto; `db restart kong`;
+`db:types`; `nuxt build` czysto; grant-check (trigger-funkcje `execute=f` dla authenticated, RPC `=t`);
+login demo przez REST OK; jeden produkt poniżej minimum. **Playwright:** patrz seria testów (istniejące
++ nowe: przycisk demo na landingu → pulpit z widocznym banerem; brak banera dla zwykłego usera;
+`reset_demo_org()` idempotentne). **Chmura:** migracje przez `apply_migration`; `reset_demo_org` +
+job `reset-demo-org` w `cron.job`; login demo przez REST; advisors 52→10.

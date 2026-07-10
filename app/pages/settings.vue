@@ -4,6 +4,7 @@ import type { Database } from '~~/shared/types/database.types'
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
+const { isPublicDemo } = useOrg()
 
 // Po twardym przeładowaniu strony `useSupabaseUser().value` bywa obiektem
 // *claims* JWT (ma `.sub`, `.email`, ale nie `.id`) zanim klient odświeży sesję.
@@ -129,8 +130,22 @@ async function deleteAccount() {
       </CardContent>
     </Card>
 
+    <!-- Informacja o trybie demo -->
+    <Card v-if="isPublicDemo" class="border-warning/40 bg-warning-soft/40">
+      <CardHeader>
+        <CardTitle>Konto demo</CardTitle>
+        <CardDescription>
+          To wspólne konto demonstracyjne. Zmiana hasła i usunięcie konta są
+          wyłączone, a dane resetują się co godzinę.
+          <NuxtLink to="/auth/register" class="font-medium text-primary hover:underline">
+            Załóż własne konto
+          </NuxtLink>, aby korzystać z pełnych ustawień.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+
     <!-- Zmiana hasła -->
-    <Card>
+    <Card v-if="!isPublicDemo">
       <CardHeader>
         <CardTitle>Zmiana hasła</CardTitle>
         <CardDescription>Ustaw nowe hasło (min. 6 znaków).</CardDescription>
@@ -156,7 +171,7 @@ async function deleteAccount() {
     </Card>
 
     <!-- Usunięcie konta -->
-    <Card class="border-destructive/50">
+    <Card v-if="!isPublicDemo" class="border-destructive/50">
       <CardHeader>
         <CardTitle class="text-destructive">Usuń konto</CardTitle>
         <CardDescription>

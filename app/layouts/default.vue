@@ -15,6 +15,7 @@ import {
   Check,
   Settings,
   Search,
+  X,
 } from '@lucide/vue'
 
 type NavItem = {
@@ -52,8 +53,11 @@ function onGlobalKeydown(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
 onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
 
-const { memberships, activeOrg, activeOrgId, setActive, load } = useOrg()
+const { memberships, activeOrg, activeOrgId, isPublicDemo, setActive, load } = useOrg()
 await load()
+
+// Baner demo — zamykany na czas sesji, wraca po odświeżeniu (useState reset).
+const demoBannerDismissed = ref(false)
 
 const { load: loadSubscription } = useSubscription()
 await loadSubscription()
@@ -146,6 +150,28 @@ async function logout() {
 
     <!-- Main content -->
     <div class="lg:pl-60">
+      <!-- Baner trybu demo -->
+      <div
+        v-if="isPublicDemo && !demoBannerDismissed"
+        class="flex items-center gap-3 border-b border-warning/30 bg-warning-soft px-4 py-2 text-sm text-warning-soft-foreground"
+        data-testid="demo-banner"
+      >
+        <p class="flex-1 leading-snug">
+          <span class="font-semibold">Tryb demo</span> — możesz wszystko klikać i tworzyć.
+          Dane resetują się co godzinę.
+          <NuxtLink to="/auth/register" class="font-semibold underline underline-offset-2">
+            Załóż własne konto
+          </NuxtLink>
+        </p>
+        <button
+          class="shrink-0 rounded-md p-1 hover:bg-warning/15"
+          aria-label="Zamknij baner"
+          @click="demoBannerDismissed = true"
+        >
+          <X class="size-4" />
+        </button>
+      </div>
+
       <!-- Top bar (branch picker + notifications; mobile also shows logo + menu) -->
       <header
         class="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70"

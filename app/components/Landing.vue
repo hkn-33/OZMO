@@ -18,7 +18,12 @@ import {
   ShoppingBag,
   Warehouse,
   Truck,
+  Code,
+  PlayCircle,
 } from '@lucide/vue'
+
+const { enterDemo, signingIn } = useDemo()
+const GITHUB_URL = 'https://github.com/hkn-33/OZMO'
 
 // Grafik tygodniowy do podglądu w hero: kolor = rola (Wong, cat-1..5), stabilny per stanowisko.
 const week = [
@@ -150,7 +155,10 @@ const faq = [
           <NuxtLink to="/auth/login" class="hidden sm:block">
             <Button variant="ghost">Zaloguj się</Button>
           </NuxtLink>
-          <NuxtLink to="/auth/register">
+          <Button variant="outline" :disabled="signingIn" @click="enterDemo">
+            {{ signingIn ? 'Otwieram…' : 'Wypróbuj demo' }}
+          </Button>
+          <NuxtLink to="/auth/register" class="hidden sm:block">
             <Button>Wypróbuj za darmo</Button>
           </NuxtLink>
         </nav>
@@ -180,9 +188,9 @@ const faq = [
                   Wypróbuj za darmo <ArrowRight class="size-4" />
                 </Button>
               </NuxtLink>
-              <NuxtLink to="#cennik">
-                <Button size="lg" variant="outline" class="w-full sm:w-auto">Zobacz cennik</Button>
-              </NuxtLink>
+              <Button size="lg" variant="outline" class="w-full gap-2 sm:w-auto" :disabled="signingIn" @click="enterDemo">
+                <PlayCircle class="size-4" /> {{ signingIn ? 'Otwieram demo…' : 'Wypróbuj demo' }}
+              </Button>
             </div>
           </div>
 
@@ -473,6 +481,32 @@ const faq = [
           </article>
         </div>
 
+        <!-- Self-host: cicha, czwarta opcja -->
+        <div class="mt-6 flex flex-col items-start justify-between gap-4 rounded-2xl border border-dashed border-border bg-card p-6 sm:flex-row sm:items-center">
+          <div class="flex items-start gap-3">
+            <Code class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+            <div>
+              <h3 class="font-heading text-lg font-bold tracking-tight">Self-host — za darmo, na własnym serwerze</h3>
+              <p class="mt-1 text-sm text-muted-foreground">
+                OZMO jest oprogramowaniem open source (licencja AGPL-3.0). Uruchom je samodzielnie
+                i korzystaj bez opłat. Wersja hostowana przez nas jest płatna.
+              </p>
+            </div>
+          </div>
+          <a :href="GITHUB_URL" target="_blank" rel="noopener" class="shrink-0">
+            <Button variant="outline" class="gap-2"><Code class="size-4" /> Kod na GitHub</Button>
+          </a>
+        </div>
+
+        <!-- Konto demo -->
+        <p class="mt-6 text-center text-sm text-muted-foreground">
+          Chcesz tylko rozejrzeć się bez zakładania konta?
+          <button class="font-medium text-primary hover:underline" :disabled="signingIn" @click="enterDemo">
+            Otwórz publiczne demo
+          </button>
+          — dane resetują się co godzinę.
+        </p>
+
         <!-- Porównanie ze status quo -->
         <div class="mt-14">
           <h3 class="font-heading text-xl font-bold tracking-tight">Rozproszone narzędzia kontra jeden system</h3>
@@ -540,7 +574,12 @@ const faq = [
           <span class="font-heading font-bold text-foreground">OZMO</span>
         </div>
         <span>© {{ new Date().getFullYear() }} OZMO. System do zarządzania firmą wielooddziałową.</span>
-        <NuxtLink to="/auth/login" class="font-medium text-foreground transition-colors hover:text-primary">Zaloguj się</NuxtLink>
+        <div class="flex items-center gap-4">
+          <a :href="GITHUB_URL" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 font-medium text-foreground transition-colors hover:text-primary">
+            <Code class="size-4" /> GitHub
+          </a>
+          <NuxtLink to="/auth/login" class="font-medium text-foreground transition-colors hover:text-primary">Zaloguj się</NuxtLink>
+        </div>
       </div>
     </footer>
   </div>

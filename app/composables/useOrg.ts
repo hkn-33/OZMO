@@ -9,6 +9,7 @@ export interface OrgMembership {
     id: string
     name: string
     slug: string
+    is_public_demo: boolean
   }
 }
 
@@ -32,7 +33,7 @@ export function useOrg() {
     if ((loaded.value && !force) || !user.value) return
     const { data, error } = await supabase
       .from('org_members')
-      .select('org_id, role, organizations(id, name, slug)')
+      .select('org_id, role, organizations(id, name, slug, is_public_demo)')
       .order('created_at', { ascending: true })
 
     if (!error && data) {
@@ -52,6 +53,7 @@ export function useOrg() {
   const role = computed<OrgRole | null>(() => activeMembership.value?.role ?? null)
   const isAdmin = computed(() => role.value === 'owner' || role.value === 'admin')
   const isOwner = computed(() => role.value === 'owner')
+  const isPublicDemo = computed(() => activeOrg.value?.is_public_demo ?? false)
 
   function setActive(orgId: string) {
     if (memberships.value.some((m) => m.org_id === orgId)) {
@@ -67,6 +69,7 @@ export function useOrg() {
     role,
     isAdmin,
     isOwner,
+    isPublicDemo,
     loaded,
     load,
     setActive,

@@ -295,3 +295,104 @@ begin
 
 end;
 $$;
+
+-- =================================================================
+-- Phase 11: public demo org (is_public_demo). Structure only —
+-- domain content is populated by private.reset_demo_org() (same
+-- routine pg_cron runs hourly), so seed and reset stay in sync.
+--   Login: demo-public / OzmoDemo2026  (public by design)
+--   Org "OZMO Demo" (network plan), 2 branches, owner + 3 employees.
+-- Idempotent: the whole block is skipped if the user already exists.
+-- =================================================================
+do $$
+declare
+  d_org uuid := 'a0000000-0000-0000-0000-0000000000d1';
+  u_pub uuid := 'b0000000-0000-0000-0000-0000000000d1';
+  u_p1  uuid := 'b0000000-0000-0000-0000-0000000000d2';
+  u_p2  uuid := 'b0000000-0000-0000-0000-0000000000d3';
+  u_p3  uuid := 'b0000000-0000-0000-0000-0000000000d4';
+  b_pub1 uuid := 'c0000000-0000-0000-0000-0000000000d1';
+  b_pub2 uuid := 'c0000000-0000-0000-0000-0000000000d2';
+  _pw text;
+begin
+  if exists (select 1 from auth.users where email = 'demo-public@users.ozmo.local') then
+    return;
+  end if;
+
+  _pw := extensions.crypt('OzmoDemo2026', extensions.gen_salt('bf'));
+
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change, email_change_token_new
+  )
+  values
+    ('00000000-0000-0000-0000-000000000000', u_pub, 'authenticated', 'authenticated', 'demo-public@users.ozmo.local', _pw, now(),
+     '{"provider":"email","providers":["email"]}', '{"username":"demo-public","full_name":"Demo Publiczne"}', now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', u_p1, 'authenticated', 'authenticated', 'jan.demo@users.ozmo.local', _pw, now(),
+     '{"provider":"email","providers":["email"]}', '{"username":"jan.demo","full_name":"Jan Kowalski"}', now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', u_p2, 'authenticated', 'authenticated', 'ola.demo@users.ozmo.local', _pw, now(),
+     '{"provider":"email","providers":["email"]}', '{"username":"ola.demo","full_name":"Aleksandra Nowak"}', now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', u_p3, 'authenticated', 'authenticated', 'kuba.demo@users.ozmo.local', _pw, now(),
+     '{"provider":"email","providers":["email"]}', '{"username":"kuba.demo","full_name":"Jakub Wójcik"}', now(), now(), '', '', '', '');
+
+  insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+  select gen_random_uuid(), u.id::text, u.id,
+         jsonb_build_object('sub', u.id::text, 'email', u.email), 'email', now(), now(), now()
+  from auth.users u
+  where u.id in (u_pub, u_p1, u_p2, u_p3);
+
+  -- Org (gastronomia preset seeds checklist templates + cost categories +
+  -- report section defs). Mark it as the public demo, upgrade to network.
+  insert into public.organizations (id, name, slug, created_by, industry, is_public_demo)
+  values (d_org, 'OZMO Demo', 'ozmo-demo', u_pub, 'gastronomia', true);
+  update public.subscriptions set plan = 'network' where org_id = d_org;
+
+  insert into public.org_members (org_id, user_id, role) values
+    (d_org, u_pub, 'owner'),
+    (d_org, u_p1, 'member'),
+    (d_org, u_p2, 'member'),
+    (d_org, u_p3, 'member');
+
+  insert into public.branches (id, org_id, name, address) values
+    (b_pub1, d_org, 'Oddział Centrum', 'ul. Główna 1, Warszawa'),
+    (b_pub2, d_org, 'Oddział Galeria', 'al. Handlowa 20, Warszawa');
+
+  insert into public.branch_members (branch_id, user_id, role, position) values
+    (b_pub1, u_pub, 'manager',  'Kierownik'),
+    (b_pub1, u_p1,  'employee', 'Kelner'),
+    (b_pub1, u_p3,  'employee', 'Kucharz'),
+    (b_pub2, u_p2,  'employee', 'Kelnerka');
+
+  insert into public.suppliers (org_id, name, contact_name, phone) values
+    (d_org, 'Hurtownia Smak', 'Jan Dostawca', '600100200'),
+    (d_org, 'Browar Regionalny', 'Ala Piwna', '600300400');
+
+  -- Products (org-level) + per-branch minimums. Kawa ziarnista gets a high
+  -- minimum so reset_demo_org keeps it visibly below stock.
+  insert into public.products (id, org_id, name, unit, category)
+  select ('f0000000-0000-0000-0000-00000000d0' || lpad(g::text, 2, '0'))::uuid, d_org, p.name, p.unit, p.category
+  from (values
+    (1,'Kawa ziarnista','kg','Napoje'),
+    (2,'Mleko','l','Napoje'),
+    (3,'Cukier','kg','Suche'),
+    (4,'Mąka pszenna','kg','Suche'),
+    (5,'Pomidory','kg','Warzywa'),
+    (6,'Ser mozzarella','kg','Nabiał'),
+    (7,'Piwo lager','opak','Alkohol'),
+    (8,'Woda mineralna','opak','Napoje')
+  ) p(g, name, unit, category);
+
+  insert into public.branch_product_settings (branch_id, product_id, org_id, min_stock)
+  select b_pub1, pr.id, d_org,
+         case when pr.name = 'Kawa ziarnista' then 20 else 5 end
+  from public.products pr where pr.org_id = d_org;
+
+  insert into public.branch_product_settings (branch_id, product_id, org_id, min_stock)
+  select b_pub2, pr.id, d_org, 6
+  from public.products pr where pr.org_id = d_org and pr.name in ('Kawa ziarnista','Mleko','Woda mineralna');
+
+  -- Populate all domain content (tasks/chat/reports/shifts/stock/costs).
+  perform private.reset_demo_org();
+end;
+$$;
