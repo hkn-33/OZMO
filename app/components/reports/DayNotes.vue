@@ -2,7 +2,7 @@
 import { toast } from 'vue-sonner'
 import { Trash2, Pencil, X, Check } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
-import { formatDateTime } from '~/lib/utils'
+import { formatDateTime, localDateKey } from '~/lib/utils'
 import type { Attachment } from '~/composables/useAttachments'
 
 type Severity = Database['public']['Enums']['day_note_severity']
@@ -14,11 +14,7 @@ const props = defineProps<{
 }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 const user = useSupabaseUser()
 
 interface Note {
@@ -31,13 +27,7 @@ interface Note {
   attachments: Attachment[]
 }
 
-function todayStr() {
-  const d = new Date()
-  const off = d.getTimezoneOffset()
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10)
-}
-
-const date = ref(todayStr())
+const date = ref(localDateKey())
 const notes = ref<Note[]>([])
 const names = ref<Record<string, string>>({})
 const loading = ref(false)
@@ -50,7 +40,7 @@ const saving = ref(false)
 const editingId = ref<string | null>(null)
 const editBody = ref('')
 
-const isToday = computed(() => date.value === todayStr())
+const isToday = computed(() => date.value === localDateKey())
 
 function nameOf(id: string) {
   return names.value[id] ?? 'Użytkownik'
@@ -82,7 +72,7 @@ async function load() {
 watch([() => props.branchId, date], load, { immediate: true })
 
 async function addNote() {
-  if (blockDemo()) return
+  if (block()) return
   const text = newBody.value.trim()
   if (!text || !user.value) return
   saving.value = true
@@ -114,7 +104,7 @@ async function addNote() {
 }
 
 function canEdit(n: Note) {
-  return props.isBranchManager || (n.author_id === user.value?.id && n.date === todayStr())
+  return props.isBranchManager || (n.author_id === user.value?.id && n.date === localDateKey())
 }
 
 function startEdit(n: Note) {
@@ -126,7 +116,7 @@ function cancelEdit() {
   editBody.value = ''
 }
 async function saveEdit(n: Note) {
-  if (blockDemo()) return
+  if (block()) return
   const text = editBody.value.trim()
   if (!text) return
   const { error } = await supabase.from('day_notes').update({ body: text }).eq('id', n.id)
@@ -138,7 +128,7 @@ async function saveEdit(n: Note) {
   cancelEdit()
 }
 async function remove(n: Note) {
-  if (blockDemo()) return
+  if (block()) return
   if (!confirm('Usunąć ten wpis?')) return
   const { error } = await supabase.from('day_notes').delete().eq('id', n.id)
   if (error) {
@@ -151,13 +141,11 @@ async function remove(n: Note) {
 
 <template>
   <div class="space-y-5">
-    <!-- Data -->
     <div class="flex items-center gap-3">
       <Label for="dn-date" class="text-sm text-muted-foreground">Data</Label>
       <Input id="dn-date" v-model="date" type="date" class="w-auto" />
     </div>
 
-    <!-- Szybki wpis (tylko dla dzisiejszej daty) -->
     <Card v-if="isToday">
       <CardContent class="space-y-3 pt-6">
         <Textarea
@@ -193,7 +181,6 @@ async function remove(n: Note) {
       </CardContent>
     </Card>
 
-    <!-- Feed -->
     <p v-if="loading" class="text-sm text-muted-foreground">Ładowanie…</p>
     <p
       v-else-if="!notes.length"

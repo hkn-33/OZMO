@@ -11,11 +11,7 @@ const props = defineProps<{
 }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 const user = useSupabaseUser()
 
 interface AvailRow {
@@ -86,12 +82,11 @@ const teamMembers = computed(() => {
     .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
 })
 
-// Add form
 const form = reactive({ weekday: '0', from: '08:00', to: '16:00', note: '' })
 const saving = ref(false)
 
 async function add() {
-  if (blockDemo()) return
+  if (block()) return
   if (!user.value) return
   if (form.to <= form.from) {
     toast.error('Godzina zakończenia musi być późniejsza niż rozpoczęcia')
@@ -118,7 +113,7 @@ async function add() {
 }
 
 async function remove(r: AvailRow) {
-  if (blockDemo()) return
+  if (block()) return
   const { error } = await supabase.from('availability').delete().eq('id', r.id)
   if (error) {
     toast.error('Nie udało się usunąć', { description: error.message })
@@ -130,7 +125,6 @@ async function remove(r: AvailRow) {
 
 <template>
   <div class="space-y-6">
-    <!-- Moja dostępność -->
     <Card>
       <CardHeader>
         <CardTitle class="text-base">Moja dostępność</CardTitle>
@@ -185,7 +179,6 @@ async function remove(r: AvailRow) {
       </CardContent>
     </Card>
 
-    <!-- Dostępność zespołu (menadżer) — siatka: osoba × dzień tygodnia -->
     <Card v-if="canManage">
       <CardHeader>
         <CardTitle class="text-base">Dostępność zespołu</CardTitle>
@@ -199,7 +192,6 @@ async function remove(r: AvailRow) {
         </p>
         <div v-else class="overflow-x-auto">
           <div class="min-w-[720px]">
-            <!-- Weekday header -->
             <div class="grid grid-cols-[10rem_repeat(7,1fr)] gap-2 border-b pb-2">
               <div />
               <div
@@ -210,7 +202,6 @@ async function remove(r: AvailRow) {
                 {{ d }}
               </div>
             </div>
-            <!-- Person rows -->
             <div
               v-for="m in teamMembers"
               :key="m.uid"

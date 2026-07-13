@@ -103,7 +103,6 @@ async function deleteAccount() {
       <p class="text-sm text-muted-foreground">Zarządzaj swoimi danymi i kontem.</p>
     </div>
 
-    <!-- Dane profilu -->
     <Card>
       <CardHeader>
         <CardTitle>Dane profilu</CardTitle>
@@ -130,7 +129,6 @@ async function deleteAccount() {
       </CardContent>
     </Card>
 
-    <!-- Informacja o trybie demo -->
     <Card v-if="isPublicDemo" class="border-warning/40 bg-warning-soft/40">
       <CardHeader>
         <CardTitle>Konto demo</CardTitle>
@@ -144,7 +142,6 @@ async function deleteAccount() {
       </CardHeader>
     </Card>
 
-    <!-- Zmiana hasła -->
     <Card v-if="!isPublicDemo">
       <CardHeader>
         <CardTitle>Zmiana hasła</CardTitle>
@@ -170,7 +167,6 @@ async function deleteAccount() {
       </CardContent>
     </Card>
 
-    <!-- Usunięcie konta -->
     <Card v-if="!isPublicDemo" class="border-destructive/50">
       <CardHeader>
         <CardTitle class="text-destructive">Usuń konto</CardTitle>

@@ -30,7 +30,6 @@ export default defineEventHandler(async (event) => {
   const uid = user.sub as string
   const admin = serverSupabaseServiceRole<Database>(event)
 
-  // --- Blokada: konto publicznego demo (współdzielone, resetowane co godzinę) ---
   const { data: demoMembership } = await admin
     .from('org_members')
     .select('org_id, organizations!inner(is_public_demo)')
@@ -44,7 +43,6 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // --- Blokada: ostatni owner organizacji z innymi członkami ---
   const { data: ownedOrgs, error: ownErr } = await admin
     .from('org_members')
     .select('org_id')
@@ -77,7 +75,6 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // --- Anonimizacja profilu ---
   const { error: profErr } = await admin
     .from('profiles')
     .update({ full_name: 'Usunięty użytkownik', phone: null, avatar_url: null })
@@ -86,12 +83,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: profErr.message })
   }
 
-  // --- Usunięcie więzów PII (członkostwa, dostępność) ---
   await admin.from('org_members').delete().eq('user_id', uid)
   await admin.from('branch_members').delete().eq('user_id', uid)
   await admin.from('availability').delete().eq('user_id', uid)
 
-  // --- Ban + anonimizacja wpisu auth.users (blokuje logowanie, usuwa e-mail PII) ---
   const { error: banErr } = await admin.auth.admin.updateUserById(uid, {
     ban_duration: '876000h', // ~100 lat
     email: `deleted+${uid}@ozmo.invalid`,

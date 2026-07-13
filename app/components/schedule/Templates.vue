@@ -37,7 +37,6 @@ function hm(t: string) {
   return t.slice(0, 5)
 }
 
-// group by weekday for display
 const byWeekday = computed(() => {
   const map: Record<number, TemplateRow[]> = {}
   for (const r of data.value ?? []) (map[r.weekday] ??= []).push(r)

@@ -74,7 +74,6 @@ async function logout() {
 
 <template>
   <div class="min-h-svh bg-background">
-    <!-- Desktop sidebar -->
     <aside
       class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex"
     >
@@ -148,9 +147,7 @@ async function logout() {
       </div>
     </aside>
 
-    <!-- Main content -->
     <div class="lg:pl-60">
-      <!-- Baner trybu demo -->
       <div
         v-if="isPublicDemo && !demoBannerDismissed"
         class="flex items-center gap-3 border-b border-warning/30 bg-warning-soft px-4 py-2 text-sm text-warning-soft-foreground"
@@ -172,7 +169,6 @@ async function logout() {
         </button>
       </div>
 
-      <!-- Top bar (branch picker + notifications; mobile also shows logo + menu) -->
       <header
         class="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70"
       >
@@ -245,7 +241,6 @@ async function logout() {
       </main>
     </div>
 
-    <!-- Mobile bottom navigation -->
     <nav
       class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >

@@ -12,9 +12,8 @@ const USERNAME_RE = /^[a-z0-9_.-]{3,30}$/
 
 function tempPassword(): string {
   const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let out = ''
-  for (let i = 0; i < 10; i++) out += chars[Math.floor(Math.random() * chars.length)]
-  return `Ozmo${out}`
+  const bytes = crypto.getRandomValues(new Uint8Array(10))
+  return `Ozmo${Array.from(bytes, (byte) => chars[byte % chars.length]).join('')}`
 }
 
 export default defineEventHandler(async (event) => {

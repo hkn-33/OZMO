@@ -8,7 +8,7 @@ export interface TaskMember {
   user_id: string
   profiles: { full_name: string | null; avatar_url: string | null } | null
 }
-export interface TaskTemplate {
+interface TaskTemplate {
   id: string
   name: string
   items: { label: string }[]

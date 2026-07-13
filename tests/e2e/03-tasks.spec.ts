@@ -7,7 +7,6 @@ test('task with checklist template → assignee notified → toggle item → @me
   const seed = await seedOrgWithUsers()
   const title = `Otwarcie zmiany ${seed.suffix}`
 
-  // --- Owner creates a task from a template, assigned to the employee ---
   const ownerCtx = await browser.newContext()
   const op = await ownerCtx.newPage()
   await login(op, seed.owner.email)
@@ -23,7 +22,6 @@ test('task with checklist template → assignee notified → toggle item → @me
   await op.getByRole('button', { name: 'Utwórz zadanie' }).click()
   await expect(op.getByText('Zadanie utworzone')).toBeVisible()
 
-  // --- Employee: bell badge shows the task_assigned notification ---
   const empCtx = await browser.newContext()
   const ep = await empCtx.newPage()
   await login(ep, seed.emp.email)
@@ -36,7 +34,6 @@ test('task with checklist template → assignee notified → toggle item → @me
   await expect(ep.getByText('Przypisano Ci zadanie')).toBeVisible()
   await ep.keyboard.press('Escape')
 
-  // --- Employee opens the task, toggles a checklist item ---
   await ep.getByRole('button', { name: new RegExp(escapeRegex(title)) }).click()
   const sheet = ep.getByRole('dialog')
   await expect(sheet).toBeVisible()
@@ -45,7 +42,6 @@ test('task with checklist template → assignee notified → toggle item → @me
   await firstItem.click()
   await expect(firstItem).toBeChecked()
 
-  // --- Employee comments with an @mention of the owner ---
   const commentBox = sheet.getByPlaceholder(/Napisz komentarz/)
   await commentBox.click()
   await commentBox.type('Zaczynam @Olaf')

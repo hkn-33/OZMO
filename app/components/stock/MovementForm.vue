@@ -9,7 +9,7 @@ const props = defineProps<{ orgId: string; branchId: string }>()
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
-const { isDemo, upgradeOpen } = useDemoGuard()
+const { block } = useDemoGuard()
 
 const typeLabel: Record<MovementType, string> = {
   delivery: 'Dostawa',
@@ -35,7 +35,6 @@ async function loadRefs() {
 }
 await loadRefs()
 
-// current line being composed
 const form = reactive({
   type: 'delivery' as MovementType,
   productId: '',
@@ -90,7 +89,6 @@ function addLine() {
     docRef: form.docRef.trim() || null,
     note: form.note.trim() || null,
   })
-  // reset only the per-item fields, keep type for repeated entries
   form.productId = ''
   form.qty = ''
   form.docRef = ''
@@ -104,10 +102,7 @@ function removeLine(i: number) {
 const saving = ref(false)
 async function submitAll() {
   if (!lines.value.length || !user.value) return
-  if (isDemo.value) {
-    upgradeOpen.value = true
-    return
-  }
+  if (block()) return
   saving.value = true
   const rows = lines.value.map((l) => ({
     org_id: props.orgId,
@@ -134,7 +129,6 @@ async function submitAll() {
 
 <template>
   <div class="grid gap-6 lg:grid-cols-2">
-    <!-- Formularz pozycji -->
     <div class="space-y-4 rounded-lg border p-4">
       <h2 class="font-semibold">Nowa pozycja</h2>
 
@@ -205,7 +199,6 @@ async function submitAll() {
       </Button>
     </div>
 
-    <!-- Lista do zapisania -->
     <div class="space-y-3 rounded-lg border p-4">
       <div class="flex items-center justify-between">
         <h2 class="font-semibold">Do zapisania</h2>

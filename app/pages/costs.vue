@@ -2,7 +2,7 @@
 import { Plus, Pencil, Trash2, Network, Store, Tags } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import type { Database } from '~~/shared/types/database.types'
-import { formatDate } from '~/lib/utils'
+import { formatDate, localDateKey } from '~/lib/utils'
 
 type BranchRole = Database['public']['Enums']['branch_role']
 
@@ -18,7 +18,6 @@ watch(activeOrgId, () => loadBranch(true))
 const money = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 })
 const pct = (part: number, total: number) => (total > 0 ? Math.round((part / total) * 1000) / 10 : 0)
 
-// ---- Cost categories (per org) ----
 interface Category { id: string; name: string; sort: number }
 const { data: categoriesData, refresh: refreshCats } = await useAsyncData(
   () => `cost-cats:${activeOrgId.value}`,
@@ -36,11 +35,6 @@ const { data: categoriesData, refresh: refreshCats } = await useAsyncData(
 const catList = computed(() => categoriesData.value ?? [])
 const catName = (id: string) => catList.value.find((c) => c.id === id)?.name ?? '—'
 
-// ---- Date range ----
-function localDate(d: Date) {
-  const off = d.getTimezoneOffset()
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10)
-}
 type Preset = 'week' | 'month' | 'prevMonth' | 'd30'
 const preset = ref<Preset>('month')
 const from = ref('')
@@ -53,19 +47,19 @@ function applyPreset(p: Preset) {
     const day = (now.getDay() + 6) % 7 // 0 = Monday
     const mon = new Date(now)
     mon.setDate(now.getDate() - day)
-    from.value = localDate(mon)
-    to.value = localDate(now)
+    from.value = localDateKey(mon)
+    to.value = localDateKey(now)
   } else if (p === 'month') {
-    from.value = localDate(new Date(now.getFullYear(), now.getMonth(), 1))
-    to.value = localDate(new Date(now.getFullYear(), now.getMonth() + 1, 0))
+    from.value = localDateKey(new Date(now.getFullYear(), now.getMonth(), 1))
+    to.value = localDateKey(new Date(now.getFullYear(), now.getMonth() + 1, 0))
   } else if (p === 'prevMonth') {
-    from.value = localDate(new Date(now.getFullYear(), now.getMonth() - 1, 1))
-    to.value = localDate(new Date(now.getFullYear(), now.getMonth(), 0))
+    from.value = localDateKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))
+    to.value = localDateKey(new Date(now.getFullYear(), now.getMonth(), 0))
   } else {
     const start = new Date(now)
     start.setDate(now.getDate() - 29)
-    from.value = localDate(start)
-    to.value = localDate(now)
+    from.value = localDateKey(start)
+    to.value = localDateKey(now)
   }
 }
 applyPreset('month')
@@ -77,7 +71,6 @@ const presetLabels: Record<Preset, string> = {
   d30: '30 dni',
 }
 
-// ---- Scope ----
 const scope = ref<'branch' | 'network'>('branch')
 const scopeBranchIds = computed(() =>
   scope.value === 'network'
@@ -87,7 +80,6 @@ const scopeBranchIds = computed(() =>
       : [],
 )
 
-// role in active branch (for cost management)
 const { data: role } = await useAsyncData(
   () => `costs-role:${activeBranchId.value}`,
   async () => {
@@ -104,7 +96,6 @@ const { data: role } = await useAsyncData(
 )
 const canManage = computed(() => isAdmin.value || role.value === 'manager')
 
-// ---- Data ----
 interface RevRow { branch_id: string; amount: number }
 interface CostRow { id: string; branch_id: string; date: string; category_id: string; amount: number; note: string | null }
 
@@ -134,7 +125,6 @@ const costByCat = computed(() => {
 })
 const costTotal = computed(() => (data.value?.costs ?? []).reduce((s, c) => s + c.amount, 0))
 
-// per-branch comparison (network) — dynamic categories
 interface BranchAgg { branch_id: string; name: string; revenue: number; cost: number; costs: Record<string, number> }
 const perBranch = computed<BranchAgg[]>(() => {
   const map = new Map<string, BranchAgg>()
@@ -165,7 +155,6 @@ const kpis = computed(() => [
   { label: 'Koszty razem', value: `${pct(costTotal.value, revenueTotal.value)}%`, sub: money.format(costTotal.value) },
 ])
 
-// cost entry management (single branch)
 const dialogOpen = ref(false)
 const editing = ref<CostRow | null>(null)
 function openCreate() {
@@ -186,7 +175,6 @@ async function removeEntry(c: CostRow) {
   await refresh()
 }
 
-// category management (org admins)
 const catMgrOpen = ref(false)
 async function onCategoriesChanged() {
   await refreshCats()
@@ -234,7 +222,6 @@ async function onCategoriesChanged() {
     </p>
 
     <template v-else>
-      <!-- Zakres dat -->
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-wrap gap-1.5">
           <Button
@@ -254,7 +241,6 @@ async function onCategoriesChanged() {
         </div>
       </div>
 
-      <!-- KPI -->
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card v-for="k in kpis" :key="k.label">
           <CardHeader class="pb-2">
@@ -267,7 +253,6 @@ async function onCategoriesChanged() {
 
       <p v-if="pending" class="text-sm text-muted-foreground">Ładowanie…</p>
 
-      <!-- Rozbicie kosztów -->
       <Card>
         <CardHeader>
           <CardTitle class="text-base">Rozbicie kosztów wg kategorii</CardTitle>
@@ -299,7 +284,6 @@ async function onCategoriesChanged() {
         </CardContent>
       </Card>
 
-      <!-- Porównanie oddziałów (sieć) -->
       <Card v-if="scope === 'network'">
         <CardHeader>
           <CardTitle class="text-base">Porównanie oddziałów</CardTitle>
@@ -330,7 +314,6 @@ async function onCategoriesChanged() {
         </CardContent>
       </Card>
 
-      <!-- Wpisy kosztów (pojedynczy oddział) -->
       <Card v-if="scope === 'branch'">
         <CardHeader class="flex-row items-center justify-between space-y-0">
           <CardTitle class="text-base">Wpisy kosztów</CardTitle>

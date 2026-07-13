@@ -137,7 +137,6 @@ const faq = [
 
 <template>
   <div class="min-h-svh bg-background text-foreground">
-    <!-- Nagłówek -->
     <header
       class="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70"
     >
@@ -165,7 +164,6 @@ const faq = [
       </div>
     </header>
 
-    <!-- Hero: split, treść po lewej + żywy podgląd produktu po prawej -->
     <section class="relative overflow-hidden">
       <div
         aria-hidden="true"
@@ -194,9 +192,7 @@ const faq = [
             </div>
           </div>
 
-          <!-- Podgląd: okno grafiku + pływające karty zadania i czatu -->
           <div class="ozmo-rise ozmo-rise-2 relative">
-            <!-- Okno grafiku -->
             <div class="overflow-hidden rounded-2xl border border-border bg-card">
               <div class="flex items-center justify-between border-b border-border bg-muted/60 px-4 py-3">
                 <div class="flex items-center gap-2">
@@ -240,7 +236,6 @@ const faq = [
               </div>
             </div>
 
-            <!-- Pływająca karta zadania (kanban) -->
             <div
               class="mt-4 rounded-xl border border-border bg-card p-3 shadow-sm sm:mt-0 sm:absolute sm:-bottom-6 sm:-left-6 sm:w-56"
             >
@@ -265,7 +260,6 @@ const faq = [
               <p class="mt-2 text-[10px] font-medium text-muted-foreground tabular-nums">2 / 3 gotowe</p>
             </div>
 
-            <!-- Pływająca wiadomość z czatu -->
             <div
               class="mt-4 flex items-start gap-2.5 rounded-xl border border-border bg-card p-3 shadow-sm sm:mt-0 sm:absolute sm:-top-5 sm:-right-5 sm:w-56"
             >
@@ -280,7 +274,6 @@ const faq = [
       </div>
     </section>
 
-    <!-- Pasek-teza -->
     <section class="border-y border-border bg-sidebar">
       <div class="mx-auto max-w-6xl px-5 py-11 sm:px-6">
         <p class="max-w-4xl font-heading text-xl font-semibold leading-snug tracking-tight sm:text-2xl">
@@ -290,7 +283,6 @@ const faq = [
       </div>
     </section>
 
-    <!-- Funkcje: bento z rytmem -->
     <section id="funkcje" class="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-20">
       <div class="max-w-2xl">
         <h2 class="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
@@ -302,7 +294,6 @@ const faq = [
       </div>
 
       <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <!-- Zadania: szeroki kafelek z żywą checklistą -->
         <article class="flex flex-col justify-between rounded-2xl border border-border bg-gradient-to-br from-primary/[0.06] to-card p-6 sm:col-span-2">
           <div>
             <ListChecks class="size-6 text-primary" />
@@ -329,7 +320,6 @@ const faq = [
           </div>
         </article>
 
-        <!-- Grafik: mini-strip zmian w kolorach ról -->
         <article class="rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
           <CalendarDays class="size-6 text-primary" />
           <h3 class="mt-4 font-heading text-lg font-bold tracking-tight">{{ features[1].title }}</h3>
@@ -347,7 +337,6 @@ const faq = [
           </div>
         </article>
 
-        <!-- Czaty: dymki -->
         <article class="rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
           <MessagesSquare class="size-6 text-primary" />
           <h3 class="mt-4 font-heading text-lg font-bold tracking-tight">{{ features[2].title }}</h3>
@@ -358,7 +347,6 @@ const faq = [
           </div>
         </article>
 
-        <!-- Magazyn: wiersze stanów z alertem -->
         <article class="rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
           <Package class="size-6 text-primary" />
           <h3 class="mt-4 font-heading text-lg font-bold tracking-tight">{{ features[3].title }}</h3>
@@ -373,7 +361,6 @@ const faq = [
           </div>
         </article>
 
-        <!-- Raporty -->
         <article class="rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
           <FileText class="size-6 text-primary" />
           <h3 class="mt-4 font-heading text-lg font-bold tracking-tight">{{ features[4].title }}</h3>
@@ -385,7 +372,6 @@ const faq = [
           </div>
         </article>
 
-        <!-- Koszty: szeroki kafelek z mini-wykresem -->
         <article class="grid gap-6 rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40 sm:col-span-2 sm:grid-cols-[1fr_auto] sm:items-center">
           <div>
             <Wallet class="size-6 text-primary" />
@@ -404,7 +390,6 @@ const faq = [
       </div>
     </section>
 
-    <!-- Jak to działa -->
     <section class="border-t border-border bg-sidebar">
       <div class="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-20">
         <h2 class="max-w-2xl font-heading text-3xl font-bold tracking-tight sm:text-4xl">
@@ -425,7 +410,6 @@ const faq = [
       </div>
     </section>
 
-    <!-- Branże -->
     <section class="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-20">
       <h2 class="max-w-2xl font-heading text-3xl font-bold tracking-tight sm:text-4xl">
         Dla każdej firmy z wieloma lokalizacjami
@@ -442,7 +426,6 @@ const faq = [
       </div>
     </section>
 
-    <!-- Cennik -->
     <section id="cennik" class="border-t border-border bg-sidebar">
       <div class="mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-20">
         <div class="max-w-2xl">
@@ -481,7 +464,6 @@ const faq = [
           </article>
         </div>
 
-        <!-- Self-host: cicha, czwarta opcja -->
         <div class="mt-6 flex flex-col items-start justify-between gap-4 rounded-2xl border border-dashed border-border bg-card p-6 sm:flex-row sm:items-center">
           <div class="flex items-start gap-3">
             <Code class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
@@ -498,7 +480,6 @@ const faq = [
           </a>
         </div>
 
-        <!-- Konto demo -->
         <p class="mt-6 text-center text-sm text-muted-foreground">
           Chcesz tylko rozejrzeć się bez zakładania konta?
           <button class="font-medium text-primary hover:underline" :disabled="signingIn" @click="enterDemo">
@@ -507,7 +488,6 @@ const faq = [
           — dane resetują się co godzinę.
         </p>
 
-        <!-- Porównanie ze status quo -->
         <div class="mt-14">
           <h3 class="font-heading text-xl font-bold tracking-tight">Rozproszone narzędzia kontra jeden system</h3>
           <div class="mt-5 grid gap-4 md:grid-cols-2">
@@ -536,7 +516,6 @@ const faq = [
       </div>
     </section>
 
-    <!-- FAQ -->
     <section class="mx-auto max-w-3xl px-5 py-16 sm:px-6 sm:py-20">
       <h2 class="font-heading text-3xl font-bold tracking-tight sm:text-4xl">Częste pytania</h2>
       <Accordion type="single" collapsible class="mt-8 w-full">
@@ -549,7 +528,6 @@ const faq = [
       </Accordion>
     </section>
 
-    <!-- Domykający CTA -->
     <section class="mx-auto max-w-6xl px-5 pb-20 sm:px-6">
       <div class="overflow-hidden rounded-3xl border border-border bg-primary px-6 py-14 text-center text-primary-foreground sm:px-12">
         <h2 class="mx-auto max-w-2xl font-heading text-3xl font-bold tracking-tight sm:text-4xl">
@@ -566,7 +544,6 @@ const faq = [
       </div>
     </section>
 
-    <!-- Stopka -->
     <footer class="border-t border-border">
       <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 text-sm text-muted-foreground sm:flex-row sm:px-6">
         <div class="flex items-center gap-2">

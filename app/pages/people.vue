@@ -9,14 +9,7 @@ type BranchRole = Database['public']['Enums']['branch_role']
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
 const { activeOrgId, activeOrg, isAdmin, isOwner, load } = useOrg()
-const { guard, isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) {
-    upgradeOpen.value = true
-    return true
-  }
-  return false
-}
+const { guard, block } = useDemoGuard()
 await load()
 
 const orgRoleLabels: Record<OrgRole, string> = {
@@ -92,7 +85,6 @@ function assignmentsFor(userId: string) {
   return data.value?.assignments.filter((a) => a.user_id === userId) ?? []
 }
 
-// --- dodawanie pracownika (username, bez e-maila) ---
 const addOpen = ref(false)
 const addForm = reactive({
   username: '',
@@ -151,10 +143,9 @@ async function copyText(text: string) {
   toast.success('Skopiowano')
 }
 
-// --- zmiana roli w organizacji ---
 async function changeOrgRole(m: Member, role: OrgRole) {
   if (role === m.role) return
-  if (blockDemo()) { await refresh(); return }
+  if (block()) { await refresh(); return }
   const { error } = await supabase
     .from('org_members')
     .update({ role })
@@ -170,7 +161,7 @@ async function changeOrgRole(m: Member, role: OrgRole) {
 }
 
 async function removeFromOrg(m: Member) {
-  if (blockDemo()) return
+  if (block()) return
   if (!confirm(`Usunąć ${memberName(m)} z organizacji? Utraci dostęp do wszystkich oddziałów.`)) return
   const { error } = await supabase
     .from('org_members')
@@ -186,7 +177,7 @@ async function removeFromOrg(m: Member) {
 }
 
 async function removeFromBranch(a: BranchAssignment) {
-  if (blockDemo()) return
+  if (block()) return
   if (!confirm(`Odpiąć od oddziału „${a.branches?.name ?? ''}"?`)) return
   const { error } = await supabase
     .from('branch_members')
@@ -200,7 +191,6 @@ async function removeFromBranch(a: BranchAssignment) {
   await refresh()
 }
 
-// --- przypisanie do oddziału ---
 const assignOpen = ref(false)
 const assignTarget = ref<Member | null>(null)
 const assignForm = reactive({ branchId: '', role: 'employee' as BranchRole, position: '' })
@@ -215,7 +205,7 @@ function openAssign(m: Member) {
 
 async function saveAssign() {
   if (!assignForm.branchId || !assignTarget.value) return
-  if (blockDemo()) { assignOpen.value = false; return }
+  if (block()) { assignOpen.value = false; return }
   const { error } = await supabase.from('branch_members').upsert(
     {
       branch_id: assignForm.branchId,
@@ -234,7 +224,6 @@ async function saveAssign() {
   await refresh()
 }
 
-// --- zaproszenia ---
 const inviteOpen = ref(false)
 const inviteForm = reactive({
   email: '',
@@ -325,7 +314,6 @@ const branchName = (id: string) =>
         </TabsTrigger>
       </TabsList>
 
-      <!-- Członkowie -->
       <TabsContent value="members" class="space-y-3">
         <Card v-for="m in data?.members" :key="m.user_id">
           <CardContent class="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
@@ -403,7 +391,6 @@ const branchName = (id: string) =>
         </Card>
       </TabsContent>
 
-      <!-- Zaproszenia -->
       <TabsContent v-if="isAdmin" value="invitations" class="space-y-3">
         <div class="flex justify-end">
           <Button variant="outline" size="sm" @click="guard(openInvite)">
@@ -438,7 +425,6 @@ const branchName = (id: string) =>
       </TabsContent>
     </Tabs>
 
-    <!-- Dialog: dodanie pracownika (username, hasło tymczasowe) -->
     <Dialog v-model:open="addOpen">
       <DialogContent>
         <DialogHeader>
@@ -526,7 +512,6 @@ const branchName = (id: string) =>
       </DialogContent>
     </Dialog>
 
-    <!-- Dialog: przypisanie do oddziału -->
     <Dialog v-model:open="assignOpen">
       <DialogContent>
         <DialogHeader>
@@ -566,7 +551,6 @@ const branchName = (id: string) =>
       </DialogContent>
     </Dialog>
 
-    <!-- Dialog: zaproszenie -->
     <Dialog v-model:open="inviteOpen">
       <DialogContent>
         <DialogHeader>

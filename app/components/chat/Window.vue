@@ -10,7 +10,7 @@ const emit = defineEmits<{ read: [channelId: string] }>()
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
-const { isDemo, upgradeOpen } = useDemoGuard()
+const { block } = useDemoGuard()
 
 interface Message {
   id: string
@@ -187,10 +187,7 @@ function teardown() {
 async function send() {
   const text = body.value.trim()
   if ((!text && !pendingAttachments.value.length) || sending.value || !user.value) return
-  if (isDemo.value) {
-    upgradeOpen.value = true
-    return
-  }
+  if (block()) return
   sending.value = true
   const { data, error } = await supabase
     .from('chat_messages')
@@ -214,7 +211,6 @@ async function send() {
   }
 }
 
-// Separatory dni
 const plDay = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
 const plTime = new Intl.DateTimeFormat('pl-PL', { hour: '2-digit', minute: '2-digit' })
 function dayKey(iso: string) {

@@ -1,82 +1,117 @@
 # OZMO
 
-**System open-source do zarządzania firmą wielooddziałową.** Jedno miejsce zamiast Excela,
-WhatsAppa i papierowych checklist — dla sieci kawiarni, restauracji, hoteli, sklepów, magazynów
-i hurtowni. Nic branżowego nie jest zaszyte na sztywno: branżę wybierasz przy zakładaniu firmy,
-a checklisty, kategorie kosztów i sekcje raportów są konfigurowalne.
+[![Nuxt 4](https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxtdotjs&logoColor=white)](https://nuxt.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+[![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![AGPL-3.0](https://img.shields.io/badge/licencja-AGPL--3.0-blue)](./LICENSE)
 
-## Moduły
+Open-source’owy system operacyjny dla wielooddziałowych firm z branży gastronomicznej,
+hotelarskiej i handlowej. Zastępuje arkusze, komunikatory i papierowe checklisty jednym
+miejscem do zarządzania codzienną pracą.
 
-- **Zadania i checklisty** — otwarcia, zamknięcia i kontrole z gotowych szablonów, widok listy i Kanban, przydzielanie, postęp na żywo.
-- **Grafik pracy** — zmiany tygodniowe, dostępność zespołu, kopiowanie tygodnia, publikacja z powiadomieniami.
-- **Czaty zespołu (realtime)** — kanał firmy i kanały oddziałów, wskaźnik pisania, historia z bazy.
-- **Magazyn i inwentaryzacja** — przyjęcia/wydania, stany liczone z ruchów, alerty niskiego stanu, spis z natury (M12).
-- **Raporty dnia** — raport pracownika i menadżera z blokadą zamknięcia zmiany do wypełnienia wymaganych sekcji.
-- **Koszty i przychody** — własne kategorie, KPI per oddział i dla całej sieci, przychód zasilany z raportów.
+OZMO jest aplikacją wielodostępową: **organizacja → oddziały → członkowie**. Uprawnienia są
+egzekwowane w PostgreSQL przez RLS, nie tylko ukrywane w interfejsie.
 
-Multi-tenant: **organizacja → oddziały → członkowie**, z rolami globalnymi (owner/admin/member)
-i lokalnymi (manager/employee). Cała logika uprawnień jest w **RLS** (deny-by-default), nie w kliencie.
+## Funkcje
 
-## Stack techniczny
+- zadania, checklisty, szablony oraz widoki listy i Kanban,
+- tygodniowy grafik pracy, dostępność zespołu i publikacja zmian,
+- czat organizacji i oddziałów z Realtime,
+- magazyn, ruchy towarowe, alerty stanów i inwentaryzacje,
+- raporty dnia pracownika i menadżera,
+- koszty, przychody i wskaźniki dla oddziału lub całej sieci,
+- role organizacyjne i oddziałowe chronione przez deny-by-default RLS,
+- instalowalna, mobilna aplikacja PWA.
+
+## Stos technologiczny
 
 | Warstwa | Technologia |
-|---|---|
-| Frontend | Nuxt 4 (Vue 3, SSR), PWA |
-| Styling | Tailwind CSS v4 (CSS-first) + shadcn-vue |
-| Backend / DB | Supabase (PostgreSQL, RLS, Realtime, Storage, pg_cron) |
-| Auth | Supabase Auth (login po nazwie użytkownika lub e-mailu) |
-| Typy | TypeScript, typy DB generowane z bazy |
-| Testy | Playwright (E2E) |
+| --- | --- |
+| Aplikacja | Nuxt 4, Vue 3, TypeScript, SSR, PWA |
+| Interfejs | Tailwind CSS 4, shadcn-vue, Reka UI, Lucide |
+| Backend | Supabase PostgreSQL, Auth, RLS, Realtime, Storage, pg_cron |
+| Testy | Playwright E2E i bezpośrednie testy RLS |
 
-## Self-host — szybki start
+## Uruchomienie lokalne
 
-Wymagania: **Node 22+**, **Docker** (lokalny stack Supabase), **Supabase CLI 2.x**.
+Wymagania:
+
+- Node.js 22 lub nowszy,
+- Docker,
+- Supabase CLI 2.x.
 
 ```bash
-# 1. Zależności
-npm install
+git clone https://github.com/hkn-33/OZMO.git
+cd OZMO
+npm ci
 
-# 2. Lokalny Supabase (Docker) — migracje + seed uruchamiają się automatycznie
 supabase start
-supabase db reset          # aplikuje migracje z supabase/migrations/ + supabase/seed.sql
+supabase db reset
 
-# 3. Zmienne środowiskowe
-cp .env.example .env        # uzupełnij URL + klucze z `supabase status`
+cp .env.example .env
+# Uzupełnij .env wartościami z `supabase status`.
 
-# 4. Typy bazy (po każdej zmianie schematu)
 npm run db:types
-
-# 5. Dev
-npm run dev                 # http://localhost:3000
-
-# 6. Produkcja
-npm run build && npm run preview
+npm run dev
 ```
 
-Zmienne w `.env` (patrz `.env.example`): `SUPABASE_URL`, `SUPABASE_KEY` (publishable/anon)
-oraz `SUPABASE_SERVICE_KEY` (tylko po stronie serwera — nigdy w kliencie).
+Aplikacja będzie dostępna pod adresem <http://localhost:3000>.
 
-Wdrożenie na własnym serwerze: własny projekt Supabase (chmura lub self-host) + aplikacja Nuxt
-za dowolnym hostingiem Node. Migracje z `supabase/migrations/` wgrywasz przez `supabase db push`
-lub panel. Aby publiczne demo resetowało się co godzinę, włącz rozszerzenie `pg_cron`.
+### Zmienne środowiskowe
 
-## Konto demo
+| Zmienna | Zastosowanie |
+| --- | --- |
+| `SUPABASE_URL` | Adres lokalnego lub zdalnego projektu Supabase |
+| `SUPABASE_KEY` | Klucz publishable/anon używany przez klienta |
+| `SUPABASE_SERVICE_KEY` | Klucz serwerowy dla tras Nitro; nigdy nie trafia do klienta |
 
-Publiczne demo (`demo-public` / `OzmoDemo2026`) daje pełną swobodę klikania — dane resetują się
-co godzinę (`pg_cron` → `private.reset_demo_org()`). Przy self-host oznaczasz organizację demo
-flagą `organizations.is_public_demo = true`.
+Przykładowe wartości i komentarze znajdują się w [`.env.example`](./.env.example). Nie commituj
+pliku `.env` ani prawdziwych kluczy.
 
-## Testy
+## Przydatne polecenia
 
 ```bash
-npm run test:e2e            # Playwright (wymaga uruchomionego lokalnego Supabase)
+npm run dev          # serwer deweloperski
+npm run build        # build produkcyjny
+npm run preview      # podgląd buildu
+npm run db:types     # typy TypeScript z lokalnej bazy
+npm run test:e2e     # testy Playwright
+node tests/rls/phase9.mjs
 ```
 
-## Licencja i model
+Testy E2E i RLS wymagają uruchomionego lokalnego Supabase oraz poprawnego pliku `.env`.
 
-OZMO jest wydawane na licencji **GNU AGPL-3.0** (patrz [`LICENSE`](./LICENSE)). Możesz je
-uruchamiać, modyfikować i hostować samodzielnie za darmo; jeśli udostępniasz zmodyfikowaną wersję
-przez sieć, musisz udostępnić także jej kod źródłowy.
+## Publiczne demo
 
-**Wersja hostowana** (utrzymywana i rozwijana przez nas, z wsparciem) jest **płatna** —
-to sposób finansowania rozwoju projektu open source.
+Wbudowane konto demonstracyjne pozwala sprawdzić aplikację bez tworzenia własnej organizacji:
+
+```text
+login: demo-public
+hasło: OzmoDemo2026
+```
+
+To celowo publiczne dane logowania. Organizacja demo ma flagę
+`organizations.is_public_demo = true`, a jej dane są resetowane co godzinę przez `pg_cron`.
+
+## Wdrożenie
+
+1. Utwórz projekt Supabase lub uruchom własny stack.
+2. Zastosuj migracje poleceniem `supabase db push`.
+3. Ustaw zmienne środowiskowe na serwerze aplikacji.
+4. Zbuduj aplikację poleceniem `npm run build` i uruchom `.output/server/index.mjs`.
+5. Włącz `pg_cron`, jeśli publiczne demo ma resetować się automatycznie.
+
+Operacje wymagające klucza serwerowego są wykonywane wyłącznie przez trasy w `server/api/`.
+
+## Rozwój projektu
+
+Przed zmianą schematu dodaj nową migrację w `supabase/migrations/`, zregeneruj typy i uruchom
+najwęższy pasujący test. Dla zmian przekrojowych zakończ pracę poleceniem `npm run build`.
+Szczegóły produktu i interfejsu opisują [`PRODUCT.md`](./PRODUCT.md) oraz
+[`design.md`](./design.md).
+
+## Licencja
+
+Kod jest udostępniany na licencji [GNU AGPL-3.0](./LICENSE). Możesz go modyfikować i hostować
+samodzielnie; udostępniając zmodyfikowaną wersję przez sieć, musisz udostępnić również jej kod
+źródłowy. Utrzymywana wersja hostowana jest płatnym sposobem finansowania rozwoju projektu.

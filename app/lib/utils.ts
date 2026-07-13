@@ -18,6 +18,10 @@ const plDate = new Intl.DateTimeFormat('pl-PL', {
   year: 'numeric',
 })
 
+export function localDateKey(date = new Date()) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
+}
+
 /** Krótki polski znacznik czasu (np. „9 lip, 14:30"). */
 export function formatDateTime(value: string | Date | null | undefined) {
   if (!value) return ''

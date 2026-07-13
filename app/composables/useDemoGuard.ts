@@ -7,13 +7,16 @@ export function useDemoGuard() {
   const { isDemo, load } = useSubscription()
   const upgradeOpen = useState<boolean>('demo.upgradeOpen', () => false)
 
+  function block() {
+    if (!isDemo.value) return false
+    upgradeOpen.value = true
+    return true
+  }
+
   function guard<T>(fn: () => T): T | void {
-    if (isDemo.value) {
-      upgradeOpen.value = true
-      return
-    }
+    if (block()) return
     return fn()
   }
 
-  return { guard, isDemo, upgradeOpen, load }
+  return { block, guard, isDemo, upgradeOpen, load }
 }

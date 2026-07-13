@@ -10,7 +10,7 @@ import {
 } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 import { tzTime } from '~/lib/tz'
-import { formatDateTime } from '~/lib/utils'
+import { formatDateTime, localDateKey } from '~/lib/utils'
 
 // `/` jest publiczne: niezalogowani widzą landing, zalogowani — pulpit.
 definePageMeta({ layout: false })
@@ -27,12 +27,6 @@ const roleLabels: Record<string, string> = {
   owner: 'Właściciel',
   admin: 'Administrator',
   member: 'Członek',
-}
-
-function todayStr() {
-  const d = new Date()
-  const off = d.getTimezoneOffset()
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10)
 }
 
 type MyTask = { id: string; title: string; status: string; due_at: string | null; priority: string }
@@ -52,7 +46,7 @@ const { data: dash } = await useAsyncData(
   async () => {
     const org = activeOrgId.value
     if (!org || !uid.value) return null
-    const today = todayStr()
+    const today = localDateKey()
 
     const [assignRes, settingsRes, levelsRes, branchesRes, notesRes] = await Promise.all([
       supabase
@@ -153,7 +147,6 @@ const { data: dash } = await useAsyncData(
   { watch: [activeOrgId, user] },
 )
 
-// Najbliższa zmiana użytkownika.
 type NextShift = {
   id: string
   starts_at: string
@@ -188,7 +181,6 @@ const nextShiftLabel = computed(() => {
   return `${day}, ${tzTime(s.starts_at, tz)}–${tzTime(s.ends_at, tz)}`
 })
 
-// Nieprzeczytane czaty (klient, po hydratacji).
 const chat = useChat()
 const unreadChannels = computed(() =>
   chat.channels.value
@@ -219,7 +211,6 @@ const dueLabel = (iso: string | null) => (iso ? formatDateTime(iso) : 'bez termi
         </p>
       </div>
 
-      <!-- Najbliższa zmiana -->
       <NuxtLink v-if="nextShiftLabel" to="/schedule" class="block">
         <Card class="transition-colors hover:bg-accent">
           <CardHeader class="pb-3">
@@ -235,7 +226,6 @@ const dueLabel = (iso: string | null) => (iso ? formatDateTime(iso) : 'bez termi
         </Card>
       </NuxtLink>
 
-      <!-- Statystyki sieci (admin/właściciel) -->
       <div v-if="dash?.network" class="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader class="pb-2">
@@ -266,7 +256,6 @@ const dueLabel = (iso: string | null) => (iso ? formatDateTime(iso) : 'bez termi
       </div>
 
       <div class="grid gap-4 lg:grid-cols-2">
-        <!-- Moje zadania -->
         <Card>
           <CardHeader class="pb-3">
             <CardTitle class="flex items-center justify-between text-base">
@@ -296,7 +285,6 @@ const dueLabel = (iso: string | null) => (iso ? formatDateTime(iso) : 'bez termi
           </CardContent>
         </Card>
 
-        <!-- Alerty magazynowe -->
         <Card>
           <CardHeader class="pb-3">
             <CardTitle class="flex items-center justify-between text-base">
@@ -327,7 +315,6 @@ const dueLabel = (iso: string | null) => (iso ? formatDateTime(iso) : 'bez termi
           </CardContent>
         </Card>
 
-        <!-- Nieprzeczytane czaty -->
         <Card>
           <CardHeader class="pb-3">
             <CardTitle class="flex items-center justify-between text-base">
@@ -353,7 +340,6 @@ const dueLabel = (iso: string | null) => (iso ? formatDateTime(iso) : 'bez termi
           </CardContent>
         </Card>
 
-        <!-- Ostatnie notatki dnia -->
         <Card>
           <CardHeader class="pb-3">
             <CardTitle class="flex items-center justify-between text-base">

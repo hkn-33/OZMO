@@ -13,12 +13,11 @@ export function weekdayIndex(d: Date): number {
   return (d.getDay() + 6) % 7
 }
 
-// --- Role/position color coding (token contract: categorical Wong palette) ---
 // Colour carries ONE meaning only: the position (stanowisko). Draft/published and
 // "own shift" are expressed through opacity/border/ring, never through hue.
 
 /** CSS var references for the categorical palette, in order of use. */
-export const CAT_COLORS = [
+const CAT_COLORS = [
   'var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)', 'var(--cat-4)', 'var(--cat-5)',
 ] as const
 

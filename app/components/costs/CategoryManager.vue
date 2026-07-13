@@ -8,11 +8,7 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ changed: [] }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 
 interface Category { id: string; name: string; sort: number }
 const categories = ref<Category[]>([])
@@ -31,10 +27,9 @@ async function load() {
 
 watch(open, (v) => { if (v) { resetState(); load() } })
 
-// ---- add ----
 const newName = ref('')
 async function add() {
-  if (blockDemo()) return
+  if (block()) return
   const name = newName.value.trim()
   if (!name) return
   const sort = categories.value.reduce((m, c) => Math.max(m, c.sort), -1) + 1
@@ -48,7 +43,6 @@ async function add() {
   emit('changed')
 }
 
-// ---- rename ----
 const editingId = ref<string | null>(null)
 const editName = ref('')
 function startEdit(c: Category) {
@@ -56,7 +50,7 @@ function startEdit(c: Category) {
   editName.value = c.name
 }
 async function saveEdit(c: Category) {
-  if (blockDemo()) return
+  if (block()) return
   const name = editName.value.trim()
   if (!name) return
   const { error } = await supabase.from('cost_categories').update({ name }).eq('id', c.id)
@@ -69,7 +63,6 @@ async function saveEdit(c: Category) {
   emit('changed')
 }
 
-// ---- delete (reassign-or-block) ----
 const deleting = ref<Category | null>(null)
 const deleteCount = ref(0)
 const reassignTo = ref('')
@@ -85,7 +78,7 @@ async function startDelete(c: Category) {
 const reassignOptions = computed(() => categories.value.filter((c) => c.id !== deleting.value?.id))
 
 async function confirmDelete() {
-  if (blockDemo()) return
+  if (block()) return
   const cat = deleting.value
   if (!cat) return
   if (deleteCount.value > 0) {
@@ -148,13 +141,11 @@ function resetState() {
         </div>
       </div>
 
-      <!-- Add -->
       <form class="flex items-center gap-2" @submit.prevent="add">
         <Input v-model="newName" placeholder="Nowa kategoria…" class="h-9" />
         <Button type="submit" size="sm" :disabled="!newName.trim()">Dodaj</Button>
       </form>
 
-      <!-- Delete confirmation / reassign -->
       <div v-if="deleting" class="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
         <p class="text-sm font-medium">Usuń kategorię „{{ deleting.name }}"</p>
         <template v-if="deleteCount > 0">

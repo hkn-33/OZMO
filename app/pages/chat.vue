@@ -41,7 +41,6 @@ function channelLabel(c: ChatChannel) {
     <h1 class="mb-3 text-2xl font-bold tracking-tight">Czaty</h1>
 
     <div class="flex min-h-0 flex-1 overflow-hidden rounded-lg border bg-card">
-      <!-- Lista kanałów -->
       <aside
         class="w-full shrink-0 flex-col border-r lg:flex lg:w-64"
         :class="activeChannel ? 'hidden lg:flex' : 'flex'"
@@ -70,7 +69,6 @@ function channelLabel(c: ChatChannel) {
         </nav>
       </aside>
 
-      <!-- Widok wiadomości -->
       <section class="min-w-0 flex-1 flex-col" :class="activeChannel ? 'flex' : 'hidden lg:flex'">
         <div v-if="activeChannel" class="flex items-center gap-2 border-b px-4 py-3">
           <Button variant="ghost" size="icon" class="lg:hidden" @click="activeChannelId = null">

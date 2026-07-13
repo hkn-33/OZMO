@@ -57,7 +57,6 @@ async function onSubmit() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <!-- Krok 1: nazwa -->
         <form v-if="step === 1" class="space-y-4" @submit.prevent="next">
           <div class="space-y-2">
             <Label for="name">Nazwa firmy</Label>
@@ -66,7 +65,6 @@ async function onSubmit() {
           <Button type="submit" class="w-full">Dalej</Button>
         </form>
 
-        <!-- Krok 2: branża -->
         <form v-else class="space-y-4" @submit.prevent="onSubmit">
           <div class="grid grid-cols-2 gap-2">
             <button

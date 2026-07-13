@@ -15,7 +15,7 @@ const open = defineModel<boolean>('open', { default: false })
 const supabase = useSupabaseClient<Database>()
 
 const PAGE = 20
-export interface MovementRow {
+interface MovementRow {
   id: string
   qty_delta: number
   type: MovementType

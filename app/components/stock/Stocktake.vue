@@ -7,11 +7,7 @@ import { formatDate, formatDateTime } from '~/lib/utils'
 const props = defineProps<{ orgId: string; branchId: string; canManage: boolean }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 
 interface StocktakeRow {
   id: string
@@ -38,9 +34,6 @@ function fmt(n: number | null | undefined) {
   return Number(n).toLocaleString('pl-PL', { maximumFractionDigits: 2 })
 }
 
-// ---------------------------------------------------------------
-// History list
-// ---------------------------------------------------------------
 const { data: list, pending, refresh } = await useAsyncData(
   () => `stocktakes:${props.branchId}`,
   async () => {
@@ -54,9 +47,6 @@ const { data: list, pending, refresh } = await useAsyncData(
   { watch: [() => props.branchId] },
 )
 
-// ---------------------------------------------------------------
-// Detail view (open one stocktake for counting / read-only)
-// ---------------------------------------------------------------
 const selected = ref<StocktakeRow | null>(null)
 const items = ref<ItemRow[]>([])
 const drafts = reactive<Record<string, string>>({})
@@ -107,7 +97,7 @@ async function saveCount(it: ItemRow) {
     return
   }
   if (val === it.counted_qty) return
-  if (blockDemo()) return
+  if (block()) return
   const { error } = await supabase
     .from('stocktake_items')
     .update({ counted_qty: val })
@@ -119,9 +109,6 @@ async function saveCount(it: ItemRow) {
   it.counted_qty = val
 }
 
-// ---------------------------------------------------------------
-// Start a new stocktake (manager only)
-// ---------------------------------------------------------------
 const startOpen = ref(false)
 const startNote = ref('')
 const products = ref<ProductRow[]>([])
@@ -130,7 +117,7 @@ const selectedProducts = reactive<Record<string, boolean>>({})
 const starting = ref(false)
 
 async function openStart() {
-  if (blockDemo()) return
+  if (block()) return
   startNote.value = ''
   const [prodRes, lvlRes] = await Promise.all([
     supabase.from('products').select('id, name, unit').eq('org_id', props.orgId).eq('active', true).order('name'),
@@ -149,7 +136,7 @@ function toggleAll() {
 }
 
 async function createStocktake() {
-  if (blockDemo()) return
+  if (block()) return
   const chosen = products.value.filter((p) => selectedProducts[p.id])
   if (!chosen.length) {
     toast.error('Wybierz przynajmniej jeden produkt')
@@ -185,13 +172,10 @@ async function createStocktake() {
   await openStocktake(st as StocktakeRow)
 }
 
-// ---------------------------------------------------------------
-// Close (manager only) — confirm shows diff summary
-// ---------------------------------------------------------------
 const closeOpen = ref(false)
 const closing = ref(false)
 function openClose() {
-  if (blockDemo()) return
+  if (block()) return
   closeOpen.value = true
 }
 async function confirmClose() {
@@ -213,7 +197,6 @@ async function confirmClose() {
 
 <template>
   <div class="space-y-4">
-    <!-- ============ LIST VIEW ============ -->
     <template v-if="!selected">
       <div class="flex items-center justify-between">
         <p class="text-sm text-muted-foreground">Spis z natury — porównanie stanu policzonego z systemowym</p>
@@ -255,7 +238,6 @@ async function confirmClose() {
       </div>
     </template>
 
-    <!-- ============ DETAIL VIEW ============ -->
     <template v-else>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -281,7 +263,6 @@ async function confirmClose() {
 
       <p v-if="loadingItems" class="text-sm text-muted-foreground">Ładowanie…</p>
 
-      <!-- Count mode (editable draft) -->
       <div v-else-if="editable" class="space-y-2">
         <div
           v-for="it in items"
@@ -307,7 +288,6 @@ async function confirmClose() {
         </div>
       </div>
 
-      <!-- Read-only diff report (closed, or employee view of draft) -->
       <div v-else class="space-y-4">
         <div class="overflow-x-auto rounded-lg border">
           <Table>
@@ -340,7 +320,6 @@ async function confirmClose() {
       </div>
     </template>
 
-    <!-- Start dialog -->
     <Dialog v-model:open="startOpen">
       <DialogContent class="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
@@ -387,7 +366,6 @@ async function confirmClose() {
       </DialogContent>
     </Dialog>
 
-    <!-- Close confirm dialog with diff -->
     <Dialog v-model:open="closeOpen">
       <DialogContent class="max-h-[85vh] overflow-y-auto">
         <DialogHeader>

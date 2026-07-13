@@ -19,7 +19,7 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ saved: [] }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
+const { block } = useDemoGuard()
 const user = useSupabaseUser()
 
 const form = reactive({ date: props.defaultDate, categoryId: '', amount: '', note: '' })
@@ -42,7 +42,7 @@ watch(open, (v) => {
 
 const saving = ref(false)
 async function save() {
-  if (isDemo.value) { upgradeOpen.value = true; return }
+  if (block()) return
   const amount = Number(form.amount)
   if (!Number.isFinite(amount) || amount < 0) {
     toast.error('Podaj kwotę ≥ 0')

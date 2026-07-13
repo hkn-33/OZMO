@@ -6,11 +6,7 @@ import type { Database } from '~~/shared/types/database.types'
 const props = defineProps<{ orgId: string }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 
 interface Supplier {
   id: string
@@ -56,7 +52,7 @@ function openEdit(s: Supplier) {
 
 const saving = ref(false)
 async function save() {
-  if (blockDemo()) return
+  if (block()) return
   if (!form.name.trim()) {
     toast.error('Podaj nazwę dostawcy')
     return
@@ -83,7 +79,7 @@ async function save() {
 }
 
 async function remove(s: Supplier) {
-  if (blockDemo()) return
+  if (block()) return
   if (!confirm(`Usunąć dostawcę „${s.name}"?`)) return
   const { error } = await supabase.from('suppliers').delete().eq('id', s.id)
   if (error) {

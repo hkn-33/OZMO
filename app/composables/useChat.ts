@@ -28,7 +28,7 @@ export function useChat() {
   )
 
   const channels = useState<ChatChannel[]>('chat.channels', () => [])
-  const unreadMap = useState<Record<string, number>>('chat.unread', () => ({})) // channel_id -> count
+  const unreadMap = useState<Record<string, number>>('chat.unread', () => ({}))
   const loaded = useState<boolean>('chat.loaded', () => false)
 
   async function loadChannels(force = false) {

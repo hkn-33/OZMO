@@ -4,11 +4,7 @@ import { MapPin, Users as UsersIcon, Plus, Pencil } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 const { activeOrgId, activeOrg, isAdmin, load } = useOrg()
 await load()
 
@@ -40,7 +36,6 @@ function memberCount(b: BranchRow) {
   return b.branch_members?.[0]?.count ?? 0
 }
 
-// --- Dialog: dodaj / edytuj ---
 const dialogOpen = ref(false)
 const editing = ref<BranchRow | null>(null)
 const form = reactive({ name: '', address: '', timezone: 'Europe/Warsaw' })
@@ -63,7 +58,7 @@ function openEdit(b: BranchRow) {
 }
 
 async function save() {
-  if (blockDemo()) return
+  if (block()) return
   if (!form.name.trim() || !activeOrgId.value) return
   saving.value = true
   const payload = {
@@ -85,7 +80,7 @@ async function save() {
 }
 
 async function toggleActive(b: BranchRow) {
-  if (blockDemo()) return
+  if (block()) return
   const { error } = await supabase
     .from('branches')
     .update({ active: !b.active })

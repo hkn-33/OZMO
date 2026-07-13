@@ -6,11 +6,7 @@ import type { Database } from '~~/shared/types/database.types'
 const props = defineProps<{ orgId: string }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 
 type FieldType = 'money' | 'number' | 'text' | 'boolean'
 interface FieldDef {
@@ -63,7 +59,7 @@ async function load() {
 watch(() => props.orgId, load, { immediate: true })
 
 async function addDef() {
-  if (blockDemo()) return
+  if (block()) return
   const sort = defs.value.length ? Math.max(...defs.value.map((d) => d.sort)) + 1 : 0
   const { error } = await supabase
     .from('report_section_defs')
@@ -76,7 +72,7 @@ async function addDef() {
 }
 
 async function saveDef(d: SectionDef) {
-  if (blockDemo()) return
+  if (block()) return
   if (!d.name.trim()) {
     toast.error('Podaj nazwę sekcji')
     return
@@ -110,7 +106,7 @@ async function saveDef(d: SectionDef) {
 }
 
 async function removeDef(d: SectionDef) {
-  if (blockDemo()) return
+  if (block()) return
   if (!confirm(`Usunąć sekcję „${d.name}"? Usuwa też jej dane w istniejących raportach.`)) return
   const { error } = await supabase.from('report_section_defs').delete().eq('id', d.id)
   if (error) {
@@ -121,7 +117,7 @@ async function removeDef(d: SectionDef) {
 }
 
 async function move(d: SectionDef, dir: -1 | 1) {
-  if (blockDemo()) return
+  if (block()) return
   const idx = defs.value.findIndex((x) => x.id === d.id)
   const other = defs.value[idx + dir]
   if (!other) return
@@ -189,7 +185,6 @@ function moveField(d: SectionDef, i: number, dir: -1 | 1) {
           </label>
         </div>
 
-        <!-- Edytor pól -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pola</span>

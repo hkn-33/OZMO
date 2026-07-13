@@ -7,7 +7,7 @@ import type { Page } from '@playwright/test'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /** Parse the project's .env (Playwright doesn't auto-load it). */
-export function loadEnv(): Record<string, string> {
+function loadEnv(): Record<string, string> {
   const path = resolve(__dirname, '../../.env')
   const out: Record<string, string> = {}
   for (const line of readFileSync(path, 'utf8').split('\n')) {
@@ -41,7 +41,7 @@ export function escapeRegex(s: string): string {
 
 export const PASSWORD = 'password123'
 
-export interface TestUser {
+interface TestUser {
   email: string
   password: string
   fullName: string

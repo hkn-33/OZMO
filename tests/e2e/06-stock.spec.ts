@@ -13,7 +13,6 @@ test('stock: delivery then usage below minimum triggers stock_low notification',
   await login(op, seed.owner.email)
   await gotoH(op, '/stock')
 
-  // --- Create a product (Produkty tab) ---
   await op.getByRole('tab', { name: 'Produkty' }).click()
   await op.getByRole('button', { name: 'Dodaj produkt' }).click()
   await op.fill('#p-name', productName)
@@ -38,7 +37,6 @@ test('stock: delivery then usage below minimum triggers stock_low notification',
     })
   expect(bpsErr).toBeNull()
 
-  // --- Record delivery (+10) then usage (-7) → ends at 3, below min 5 ---
   await op.getByRole('tab', { name: 'Przyjęcie/Wydanie' }).click()
 
   // Delivery line (type defaults to "Dostawa")
@@ -59,7 +57,6 @@ test('stock: delivery then usage below minimum triggers stock_low notification',
   await op.getByRole('button', { name: /Zapisz wszystkie/ }).click()
   await expect(op.getByText(/Zapisano/)).toBeVisible()
 
-  // --- Verify stock level shows "Niski stan" and the stock_low alert fired ---
   await op.getByRole('tab', { name: 'Stany' }).click()
   await expect(
     op.getByRole('row').filter({ hasText: prodRe }).getByText('Niski stan'),

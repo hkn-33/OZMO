@@ -6,11 +6,7 @@ import type { Database } from '~~/shared/types/database.types'
 const props = defineProps<{ orgId: string; branchId: string }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 
 const UNITS = ['szt', 'kg', 'l', 'opak']
 
@@ -36,7 +32,6 @@ const { data, pending, refresh } = await useAsyncData(
   { watch: [() => props.branchId] },
 )
 
-// create/edit dialog
 const dialogOpen = ref(false)
 const editing = ref<Product | null>(null)
 const form = reactive({ name: '', unit: 'szt', category: '', active: true })
@@ -60,7 +55,7 @@ function openEdit(p: Product) {
 
 const saving = ref(false)
 async function save() {
-  if (blockDemo()) return
+  if (block()) return
   if (!form.name.trim()) {
     toast.error('Podaj nazwę produktu')
     return
@@ -85,10 +80,9 @@ async function save() {
   await refresh()
 }
 
-// inline min_stock editing
 const minDrafts = reactive<Record<string, string>>({})
 async function saveMin(p: Product) {
-  if (blockDemo()) return
+  if (block()) return
   const raw = minDrafts[p.id]
   if (raw == null) return
   const val = Number(raw)

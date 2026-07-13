@@ -20,11 +20,7 @@ const props = defineProps<{
 }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 const user = useSupabaseUser()
 
 interface ShiftRow {
@@ -37,7 +33,6 @@ interface ShiftRow {
   note: string | null
 }
 
-// --- Week navigation (Monday-start) ---
 function localKey(d: Date) {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -75,7 +70,6 @@ function today() {
   cursor.value = mondayOf(new Date())
 }
 
-// --- Data ---
 const rangeStart = computed(() => zonedTimeToIso(days.value[0]!.key, '00:00', props.timezone))
 const rangeEnd = computed(() => {
   const d = new Date(weekStart.value); d.setDate(d.getDate() + 7)
@@ -154,7 +148,6 @@ const hasDrafts = computed(() => (data.value?.shifts ?? []).some((s) => !s.publi
 // Today highlight (branch-local calendar day).
 const todayKey = tzDateKey(new Date().toISOString(), props.timezone)
 
-// --- Role/position color coding (stable per position within the branch) ---
 const positionColors = computed(() =>
   buildPositionColors((data.value?.shifts ?? []).map((s) => s.position)),
 )
@@ -170,7 +163,6 @@ const hasUnpositioned = computed(() =>
   (data.value?.shifts ?? []).some((s) => !s.position?.trim()),
 )
 
-// --- Dialog ---
 const dialogOpen = ref(false)
 const editing = ref<EditingShift | null>(null)
 const defaultDate = ref(localKey(new Date()))
@@ -195,7 +187,7 @@ function openEdit(s: ShiftRow) {
 }
 
 async function removeShift(s: ShiftRow) {
-  if (blockDemo()) return
+  if (block()) return
   const { error } = await supabase.from('shifts').delete().eq('id', s.id)
   if (error) {
     toast.error('Nie udało się usunąć zmiany', { description: error.message })
@@ -207,7 +199,7 @@ async function removeShift(s: ShiftRow) {
 
 const publishing = ref(false)
 async function publishWeek() {
-  if (blockDemo()) return
+  if (block()) return
   publishing.value = true
   const { error } = await supabase
     .from('shifts')
@@ -227,7 +219,7 @@ async function publishWeek() {
 
 const copying = ref(false)
 async function copyPrevWeek() {
-  if (blockDemo()) return
+  if (block()) return
   copying.value = true
   const prev = new Date(weekStart.value); prev.setDate(prev.getDate() - 7)
   const { data: count, error } = await supabase.rpc('copy_week_shifts', {
@@ -247,7 +239,6 @@ async function copyPrevWeek() {
 
 <template>
   <div class="space-y-4">
-    <!-- Toolbar (sticky week nav on mobile) -->
     <div
       class="sticky top-0 z-20 -mx-1 flex flex-wrap items-center justify-between gap-3 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none"
     >
@@ -276,7 +267,6 @@ async function copyPrevWeek() {
     <p v-if="pending" class="py-6 text-sm text-muted-foreground">Ładowanie…</p>
 
     <template v-else>
-      <!-- Legend: role colors present this week + draft/published key for managers -->
       <div
         class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-3 py-2 text-xs"
       >
@@ -310,7 +300,6 @@ async function copyPrevWeek() {
         </template>
       </div>
 
-      <!-- Week grid: 7 columns on desktop, day list on mobile -->
       <div class="grid gap-3 lg:grid-cols-7">
         <div
           v-for="(day, i) in days"
@@ -318,7 +307,6 @@ async function copyPrevWeek() {
           class="rounded-lg border p-2"
           :class="day.key === todayKey ? 'bg-card ring-1 ring-primary/40' : 'bg-card'"
         >
-          <!-- Day header: weekday + date; today gets a tinted header -->
           <div
             class="mb-2 flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
             :class="day.key === todayKey ? 'bg-primary/10' : ''"
@@ -346,7 +334,6 @@ async function copyPrevWeek() {
             </Button>
           </div>
 
-          <!-- Staffing hint from templates -->
           <p
             v-if="staffing(i, day.key)"
             class="mb-2 inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-medium"
@@ -359,7 +346,6 @@ async function copyPrevWeek() {
           </p>
 
           <div class="space-y-2">
-            <!-- Shift cards -->
             <div
               v-for="s in shiftsByDay[day.key] ?? []"
               :key="s.id"
@@ -410,7 +396,6 @@ async function copyPrevWeek() {
               <p v-if="s.note" class="mt-1 text-xs text-muted-foreground">{{ s.note }}</p>
             </div>
 
-            <!-- Empty day: quiet add affordance for managers, else muted note -->
             <button
               v-if="canManage && !(shiftsByDay[day.key]?.length)"
               type="button"

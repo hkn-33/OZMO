@@ -75,7 +75,6 @@ const rows = computed(() => {
     })
 })
 
-// history drawer
 const historyOpen = ref(false)
 const historyProduct = ref<Row | null>(null)
 function openHistory(r: Row) {

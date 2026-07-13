@@ -84,7 +84,6 @@ function resetFilters() {
 
 <template>
   <div class="space-y-4">
-    <!-- Filtry -->
     <div class="flex flex-wrap gap-2">
       <Select v-model="filters.status">
         <SelectTrigger class="w-40"><SelectValue placeholder="Status" /></SelectTrigger>

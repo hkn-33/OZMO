@@ -23,14 +23,7 @@ const emit = defineEmits<{ changed: []; open: [id: string] }>()
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) {
-    upgradeOpen.value = true
-    return true
-  }
-  return false
-}
+const { block } = useDemoGuard()
 
 const statusLabels: Record<TaskStatus, string> = {
   todo: 'Do zrobienia',
@@ -77,7 +70,6 @@ const checklist = ref<ChecklistItem[]>([])
 const comments = ref<Comment[]>([])
 const loading = ref(false)
 
-// Powiązane zadania
 const linkedTasks = ref<LinkedTask[]>([])
 const branchTasks = ref<LinkedTask[]>([])
 const linkQuery = ref('')
@@ -156,7 +148,7 @@ const linkCandidates = computed(() => {
 
 async function addLink(otherId: string) {
   if (!task.value) return
-  if (blockDemo()) return
+  if (block()) return
   const { error } = await supabase
     .from('task_links')
     .insert({ task_id: task.value.id, linked_task_id: otherId })
@@ -171,7 +163,7 @@ async function addLink(otherId: string) {
 
 async function removeLink(otherId: string) {
   if (!task.value) return
-  if (blockDemo()) return
+  if (block()) return
   const id = task.value.id
   const { error } = await supabase
     .from('task_links')
@@ -256,7 +248,7 @@ watch(
 
 async function updateTaskField(patch: Partial<TaskFull>) {
   if (!task.value) return
-  if (blockDemo()) return false
+  if (block()) return false
   const { error } = await supabase.from('tasks').update(patch).eq('id', task.value.id)
   if (error) {
     toast.error('Nie udało się zapisać', { description: error.message })
@@ -285,7 +277,7 @@ async function saveDetails() {
 }
 
 async function toggleChecklist(item: ChecklistItem) {
-  if (blockDemo()) return
+  if (block()) return
   const done = !item.done
   const { error } = await supabase
     .from('task_checklist_items')
@@ -306,7 +298,7 @@ async function toggleChecklist(item: ChecklistItem) {
 
 async function addAssignee(userId: string) {
   if (!task.value) return
-  if (blockDemo()) return
+  if (block()) return
   const { error } = await supabase
     .from('task_assignees')
     .insert({ task_id: task.value.id, user_id: userId })
@@ -319,7 +311,7 @@ async function addAssignee(userId: string) {
 }
 async function removeAssignee(userId: string) {
   if (!task.value) return
-  if (blockDemo()) return
+  if (block()) return
   const { error } = await supabase
     .from('task_assignees')
     .delete()
@@ -335,7 +327,7 @@ async function removeAssignee(userId: string) {
 
 async function deleteTask() {
   if (!task.value) return
-  if (blockDemo()) return
+  if (block()) return
   if (!confirm(`Usunąć zadanie „${task.value.title}"? Tej operacji nie można cofnąć.`)) return
   const { error } = await supabase.from('tasks').delete().eq('id', task.value.id)
   if (error) {
@@ -347,7 +339,6 @@ async function deleteTask() {
   emit('changed')
 }
 
-// --- komentarze + @wzmianki ---
 const commentBody = ref('')
 const commentAttachments = ref<Attachment[]>([])
 const mentionOpen = ref(false)
@@ -378,7 +369,7 @@ function pickMention(m: TaskMember) {
 
 async function sendComment() {
   if ((!commentBody.value.trim() && !commentAttachments.value.length) || !task.value || !user.value) return
-  if (blockDemo()) return
+  if (block()) return
   const ids = new Set<string>()
   for (const [name, id] of Object.entries(mentionMap.value)) {
     if (commentBody.value.includes(`@${name}`)) ids.add(id)
@@ -424,7 +415,6 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
       <div v-if="loading" class="p-4 text-sm text-muted-foreground">Ładowanie…</div>
 
       <div v-else-if="task" class="flex-1 space-y-6 overflow-y-auto p-4">
-        <!-- Status + priorytet -->
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1.5">
             <Label class="text-xs text-muted-foreground">Status</Label>
@@ -446,7 +436,6 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
           </div>
         </div>
 
-        <!-- Edycja pól -->
         <div class="space-y-3">
           <div class="space-y-1.5">
             <Label for="d-title" class="text-xs text-muted-foreground">Tytuł</Label>
@@ -465,7 +454,6 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
           </Button>
         </div>
 
-        <!-- Przypisani -->
         <div class="space-y-2">
           <Label class="text-xs text-muted-foreground">Przypisani</Label>
           <div class="flex flex-wrap items-center gap-1.5">
@@ -494,7 +482,6 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
           </div>
         </div>
 
-        <!-- Checklista -->
         <div v-if="checklist.length" class="space-y-2">
           <Label class="text-xs text-muted-foreground">
             Checklista ({{ doneCount }}/{{ checklist.length }})
@@ -522,7 +509,6 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
           </ul>
         </div>
 
-        <!-- Powiązane zadania -->
         <div class="space-y-2">
           <Label class="text-xs text-muted-foreground">Powiązane zadania</Label>
           <ul v-if="linkedTasks.length" class="space-y-1">
@@ -585,7 +571,6 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
           </div>
         </div>
 
-        <!-- Komentarze -->
         <div class="space-y-3">
           <Label class="text-xs text-muted-foreground">Komentarze</Label>
           <div v-if="!comments.length" class="text-sm text-muted-foreground">
@@ -611,7 +596,6 @@ const doneCount = computed(() => checklist.value.filter((i) => i.done).length)
         </div>
       </div>
 
-      <!-- Stopka: nowy komentarz + usuwanie -->
       <div v-if="task" class="border-t p-3">
         <div class="relative">
           <div

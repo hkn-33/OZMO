@@ -58,7 +58,6 @@ function rowTotal(productId: string) {
       </p>
 
       <template v-else>
-        <!-- Desktop: matryca produkt × oddział -->
         <div class="hidden overflow-x-auto rounded-lg border sm:block">
           <Table>
             <TableHeader>
@@ -92,7 +91,6 @@ function rowTotal(productId: string) {
           </Table>
         </div>
 
-        <!-- Mobile: lista produktów z rozwijanym rozbiciem na oddziały -->
         <Accordion type="multiple" class="sm:hidden">
           <AccordionItem v-for="p in data.products" :key="p.id" :value="p.id">
             <AccordionTrigger>

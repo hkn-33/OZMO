@@ -2,7 +2,7 @@
 import { toast } from 'vue-sonner'
 import { CheckCircle2, Circle, Lock } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
-import { formatDateTime } from '~/lib/utils'
+import { formatDateTime, localDateKey } from '~/lib/utils'
 
 const props = defineProps<{
   orgId: string
@@ -11,11 +11,7 @@ const props = defineProps<{
 }>()
 
 const supabase = useSupabaseClient<Database>()
-const { isDemo, upgradeOpen } = useDemoGuard()
-function blockDemo() {
-  if (isDemo.value) { upgradeOpen.value = true; return true }
-  return false
-}
+const { block } = useDemoGuard()
 const user = useSupabaseUser()
 
 type FieldType = 'money' | 'number' | 'text' | 'boolean'
@@ -47,17 +43,11 @@ interface SectionRow {
   def: SectionDef | null
 }
 
-function todayStr() {
-  const d = new Date()
-  const off = d.getTimezoneOffset()
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10)
-}
-
 function moneyLabel(f: FieldDef) {
   return f.type === 'money' ? `${f.label} (zł)` : f.label
 }
 
-const date = ref(todayStr())
+const date = ref(localDateKey())
 const report = ref<ReportRow | null>(null)
 const sections = ref<SectionRow[]>([])
 const loading = ref(false)
@@ -132,7 +122,7 @@ async function load() {
 watch([() => props.branchId, () => props.orgId, date], load, { immediate: true })
 
 async function createReport() {
-  if (blockDemo()) return
+  if (block()) return
   if (!user.value) return
   creating.value = true
   const { data, error } = await supabase
@@ -150,7 +140,7 @@ async function createReport() {
 }
 
 async function saveSection(s: SectionRow) {
-  if (blockDemo()) return
+  if (block()) return
   const form = forms.value[s.id]!
   const { completed, ...rest } = form
   const fields = s.def?.fields ?? []
@@ -175,7 +165,7 @@ async function saveSection(s: SectionRow) {
 }
 
 async function closeReport() {
-  if (blockDemo()) return
+  if (block()) return
   if (!report.value) return
   closing.value = true
   const { error } = await supabase
@@ -208,7 +198,6 @@ function displayValue(s: SectionRow, f: FieldDef) {
 
     <p v-if="loading" class="text-sm text-muted-foreground">Ładowanie…</p>
 
-    <!-- Brak raportu -->
     <div
       v-else-if="!report"
       class="rounded-lg border border-dashed p-8 text-center"
@@ -220,7 +209,6 @@ function displayValue(s: SectionRow, f: FieldDef) {
     </div>
 
     <template v-else>
-      <!-- Nagłówek: status + postęp -->
       <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
         <div class="flex items-center gap-2">
           <Badge :variant="report.status === 'closed' ? 'success' : 'warning'" class="gap-1">
@@ -237,7 +225,6 @@ function displayValue(s: SectionRow, f: FieldDef) {
         </div>
       </div>
 
-      <!-- Sekcje -->
       <Accordion type="multiple" class="rounded-lg border">
         <AccordionItem
           v-for="s in orderedSections"
@@ -254,7 +241,6 @@ function displayValue(s: SectionRow, f: FieldDef) {
             </span>
           </AccordionTrigger>
           <AccordionContent>
-            <!-- Edytowalny formularz -->
             <div v-if="editable && s.def" class="space-y-3 pb-2">
               <div v-for="f in s.def.fields" :key="f.key" class="space-y-1.5">
                 <template v-if="f.type === 'boolean'">
@@ -284,7 +270,6 @@ function displayValue(s: SectionRow, f: FieldDef) {
               </div>
             </div>
 
-            <!-- Widok tylko do odczytu -->
             <dl v-else-if="s.def" class="space-y-2 pb-2 text-sm">
               <div v-for="f in s.def.fields" :key="f.key" class="flex justify-between gap-4">
                 <dt class="text-muted-foreground">{{ moneyLabel(f) }}</dt>
@@ -295,7 +280,6 @@ function displayValue(s: SectionRow, f: FieldDef) {
         </AccordionItem>
       </Accordion>
 
-      <!-- Zamknięcie -->
       <div v-if="editable" class="space-y-2">
         <Button class="w-full" :disabled="!allComplete || closing" @click="closeReport">
           {{ closing ? 'Zamykanie…' : 'Zamknij raport' }}
