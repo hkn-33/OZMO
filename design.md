@@ -610,8 +610,9 @@ polskie znaki.
 - `--radius` 0.5rem; główne panele 14px, inputy/przyciski 8px, plakietki pill. Bez promieni 24px+.
 - Panele są płaskie: hairline albo osobny kolor powierzchni, bez cienia. Cień tylko dla warstw
   pływających: menu, sheet, dialog, toast.
-- Shell desktop: grafitowa szyna ikon + jasny pas etykiet. Sticky header jest nieprzezroczysty,
-  by zachować czytelność danych. Mobile: grafitowy bottom-nav z safe-area i celami ≥44px.
+- Shell desktop: jednolity grafitowy sidebar z tekstowym wordmarkiem i pełnymi etykietami.
+  Sticky header jest nieprzezroczysty, by zachować czytelność danych. Mobile: grafitowy
+  bottom-nav z safe-area i celami ≥44px.
 - Pulpit używa makrostruktury **Workbench**: asymetryczne podsumowanie, duża lista pracy i prawa
   oś dnia. Bez siatki identycznych kart KPI.
 - Strefa nagłówka strony spójna wszędzie: `h1` + linia kontekstu (muted) + jedna akcja główna.

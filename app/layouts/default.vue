@@ -53,7 +53,7 @@ function onGlobalKeydown(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
 onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
 
-const { memberships, activeOrg, activeOrgId, isPublicDemo, setActive, load } = useOrg()
+const { memberships, activeOrgId, isPublicDemo, setActive, load } = useOrg()
 await load()
 
 const demoBannerDismissed = ref(false)
@@ -74,19 +74,15 @@ async function logout() {
 <template>
   <div class="min-h-svh bg-background">
     <aside
-      class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-card lg:flex"
+      class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-[var(--color-on-ink-rule)] bg-[var(--color-panel-ink)] lg:flex"
     >
-      <div class="pointer-events-none absolute inset-y-0 left-0 w-16 bg-[var(--color-panel-ink)]" />
-
-      <div class="relative grid h-16 grid-cols-[4rem_1fr] items-center">
-        <span class="grid size-9 place-items-center justify-self-center rounded-lg bg-[var(--color-on-ink)] text-sm font-bold text-[var(--color-panel-ink)]">O</span>
-        <span class="min-w-0 px-4 leading-tight">
-          <span class="block font-heading text-lg font-bold tracking-tight">OZMO</span>
-          <span v-if="activeOrg" class="block truncate text-xs text-muted-foreground">{{ activeOrg.name }}</span>
+      <div class="flex h-20 items-center px-6">
+        <span class="font-heading text-3xl font-bold tracking-[-0.04em] text-[var(--color-on-ink)]" aria-label="OZMO">
+          ozmo<span class="text-primary">.</span>
         </span>
       </div>
 
-      <nav class="relative flex-1 space-y-1 py-3">
+      <nav class="flex-1 space-y-1 px-3 py-2">
         <NuxtLink
           v-for="item in navItems"
           :key="item.to"
@@ -96,34 +92,27 @@ async function logout() {
         >
           <a
             :href="href"
-            class="grid min-h-11 grid-cols-[4rem_1fr] items-center text-sm"
+            class="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-150"
+            :class="isActive ? 'bg-[var(--color-on-ink-soft)] text-[var(--color-on-ink)]' : 'text-[var(--color-on-ink-muted)] hover:bg-[var(--color-on-ink-soft)] hover:text-[var(--color-on-ink)]'"
             :aria-current="isActive ? 'page' : undefined"
             @click="navigate"
           >
-            <span
-              class="mx-auto grid size-9 place-items-center rounded-lg transition-colors duration-150"
-              :class="isActive ? 'bg-[var(--color-on-ink)] text-[var(--color-panel-ink)]' : 'text-[var(--color-on-ink-muted)] hover:text-[var(--color-on-ink)]'"
-            >
-              <component :is="item.icon" class="size-[18px]" />
-            </span>
-            <span
-              class="mr-3 rounded-lg px-3 py-2.5 font-medium transition-colors duration-150"
-              :class="isActive ? 'bg-primary/10 font-semibold text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
-            >{{ item.label }}</span>
+            <component :is="item.icon" class="size-[18px] shrink-0" :class="isActive ? 'text-primary' : ''" />
+            <span>{{ item.label }}</span>
           </a>
         </NuxtLink>
       </nav>
 
-      <div class="relative border-t py-3">
+      <div class="border-t border-[var(--color-on-ink-rule)] p-3">
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
             <button
-              class="grid min-h-12 w-full grid-cols-[4rem_1fr] items-center text-sm"
+              class="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-sm text-[var(--color-on-ink-muted)] hover:bg-[var(--color-on-ink-soft)] hover:text-[var(--color-on-ink)]"
             >
-              <Avatar class="mx-auto size-8 border border-[var(--color-on-ink-rule)]">
+              <Avatar class="size-8 shrink-0 border border-[var(--color-on-ink-rule)]">
                 <AvatarFallback class="bg-[var(--color-on-ink-soft)] text-[var(--color-on-ink)]">{{ userInitial }}</AvatarFallback>
               </Avatar>
-              <span class="mr-3 truncate rounded-lg px-3 py-2 text-left text-muted-foreground hover:bg-muted hover:text-foreground">{{ userLabel }}</span>
+              <span class="truncate text-left">{{ userLabel }}</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="w-56">
