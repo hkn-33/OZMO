@@ -56,7 +56,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
 const { memberships, activeOrg, activeOrgId, isPublicDemo, setActive, load } = useOrg()
 await load()
 
-// Baner demo — zamykany na czas sesji, wraca po odświeżeniu (useState reset).
 const demoBannerDismissed = ref(false)
 
 const { load: loadSubscription } = useSubscription()
@@ -75,43 +74,56 @@ async function logout() {
 <template>
   <div class="min-h-svh bg-background">
     <aside
-      class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex"
+      class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-card lg:flex"
     >
-      <div class="flex h-16 items-center gap-2.5 px-5">
-        <span
-          class="grid size-8 shrink-0 place-items-center rounded-lg bg-primary font-heading text-base font-bold text-primary-foreground"
-          aria-hidden="true"
-        >O</span>
-        <span class="flex min-w-0 flex-col leading-tight">
-          <span class="font-heading text-lg font-bold tracking-tight text-foreground">OZMO</span>
-          <span v-if="activeOrg" class="truncate text-xs text-muted-foreground">
-            {{ activeOrg.name }}
-          </span>
+      <div class="pointer-events-none absolute inset-y-0 left-0 w-16 bg-[var(--color-panel-ink)]" />
+
+      <div class="relative grid h-16 grid-cols-[4rem_1fr] items-center">
+        <span class="grid size-9 place-items-center justify-self-center rounded-lg bg-[var(--color-on-ink)] text-sm font-bold text-[var(--color-panel-ink)]">O</span>
+        <span class="min-w-0 px-4 leading-tight">
+          <span class="block font-heading text-lg font-bold tracking-tight">OZMO</span>
+          <span v-if="activeOrg" class="block truncate text-xs text-muted-foreground">{{ activeOrg.name }}</span>
         </span>
       </div>
-      <nav class="flex-1 space-y-0.5 px-3 py-2">
+
+      <nav class="relative flex-1 space-y-1 py-3">
         <NuxtLink
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          active-class="bg-primary/10 text-primary font-semibold hover:bg-primary/10 hover:text-primary"
+          custom
+          v-slot="{ href, navigate, isActive }"
         >
-          <component :is="item.icon" class="size-[18px]" />
-          {{ item.label }}
+          <a
+            :href="href"
+            class="grid min-h-11 grid-cols-[4rem_1fr] items-center text-sm"
+            :aria-current="isActive ? 'page' : undefined"
+            @click="navigate"
+          >
+            <span
+              class="mx-auto grid size-9 place-items-center rounded-lg transition-colors duration-150"
+              :class="isActive ? 'bg-[var(--color-on-ink)] text-[var(--color-panel-ink)]' : 'text-[var(--color-on-ink-muted)] hover:text-[var(--color-on-ink)]'"
+            >
+              <component :is="item.icon" class="size-[18px]" />
+            </span>
+            <span
+              class="mr-3 rounded-lg px-3 py-2.5 font-medium transition-colors duration-150"
+              :class="isActive ? 'bg-primary/10 font-semibold text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
+            >{{ item.label }}</span>
+          </a>
         </NuxtLink>
       </nav>
-      <Separator />
-      <div class="p-3">
+
+      <div class="relative border-t py-3">
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
             <button
-              class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent"
+              class="grid min-h-12 w-full grid-cols-[4rem_1fr] items-center text-sm"
             >
-              <Avatar class="size-8">
-                <AvatarFallback>{{ userInitial }}</AvatarFallback>
+              <Avatar class="mx-auto size-8 border border-[var(--color-on-ink-rule)]">
+                <AvatarFallback class="bg-[var(--color-on-ink-soft)] text-[var(--color-on-ink)]">{{ userInitial }}</AvatarFallback>
               </Avatar>
-              <span class="truncate">{{ userLabel }}</span>
+              <span class="mr-3 truncate rounded-lg px-3 py-2 text-left text-muted-foreground hover:bg-muted hover:text-foreground">{{ userLabel }}</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="w-56">
@@ -147,7 +159,7 @@ async function logout() {
       </div>
     </aside>
 
-    <div class="lg:pl-60">
+    <div class="lg:pl-64">
       <div
         v-if="isPublicDemo && !demoBannerDismissed"
         class="flex items-center gap-3 border-b border-warning/30 bg-warning-soft px-4 py-2 text-sm text-warning-soft-foreground"
@@ -170,20 +182,20 @@ async function logout() {
       </div>
 
       <header
-        class="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+        class="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b bg-card px-4 lg:px-6"
       >
         <div class="flex items-center gap-2">
-          <span class="font-heading text-lg font-bold tracking-tight lg:hidden">OZMO</span>
+          <span class="hidden font-heading text-lg font-bold tracking-tight min-[23rem]:block lg:hidden">OZMO</span>
           <LayoutBranchPicker />
         </div>
         <div class="flex items-center gap-1">
           <button
-            class="hidden w-56 items-center gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-ring/60 hover:text-foreground sm:flex"
+            class="hidden h-10 w-64 items-center gap-2 rounded-lg bg-muted px-3 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground sm:flex"
             @click="searchOpen = true"
           >
             <Search class="size-4 shrink-0" />
             <span class="flex-1 text-left">Szukaj…</span>
-            <kbd class="rounded border bg-muted px-1.5 font-mono text-[10px] tabular-nums">⌘K</kbd>
+            <kbd class="rounded border bg-card px-1.5 font-mono text-[10px] tabular-nums">⌘K</kbd>
           </button>
           <Button variant="ghost" size="icon" class="sm:hidden" @click="searchOpen = true">
             <Search class="size-5" />
@@ -236,26 +248,26 @@ async function logout() {
         </div>
       </header>
 
-      <main class="p-4 pb-24 lg:p-8 lg:pb-8">
+      <main class="p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8 xl:p-10">
         <slot />
       </main>
     </div>
 
     <nav
-      class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <NuxtLink
         v-for="item in primaryItems"
         :key="item.to"
         :to="item.to"
-        class="flex min-h-[3.25rem] flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-muted-foreground transition-colors"
-        active-class="text-primary"
+        class="flex min-h-[3.25rem] flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-[var(--color-on-ink-muted)] transition-colors"
+        active-class="text-[var(--color-on-ink)]"
       >
         <component :is="item.icon" class="size-[22px]" />
         {{ item.label }}
       </NuxtLink>
       <button
-        class="flex min-h-[3.25rem] flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-muted-foreground transition-colors"
+        class="flex min-h-[3.25rem] flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-[var(--color-on-ink-muted)] transition-colors"
         @click="sheetOpen = true"
       >
         <Menu class="size-[22px]" />

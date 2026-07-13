@@ -1,7 +1,10 @@
-/* Self-hosted variable font (no external CDN). Single family: Inter Variable with
-   weight + optical-size (opsz) axes — opsz gives headings the "Inter Display" cut
-   automatically via font-optical-sizing. Polish diacritics via the latin-ext subset,
-   which the browser lazy-loads by unicode-range. */
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V5
+ * Hallmark · genre: modern-minimal · macrostructure: Workbench · design-system: design.md · designed-as-app
+ * contrast: pass (40–41) · nav: N3 · footer: none · slop: pass (42–57)
+ */
+@import "../../../tokens.css";
+
+@import '@fontsource-variable/bricolage-grotesque/index.css';
 @import '@fontsource-variable/inter/opsz.css';
 
 @import "tailwindcss";
@@ -10,9 +13,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Typography — one family (Inter), weight + optical size carry the hierarchy */
+  /* Typography — compact display voice over a quiet, readable UI face. */
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-heading);
   --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
 
@@ -95,30 +98,27 @@
 :root {
   --radius: 0.5rem;
 
-  /* Slate & Cobalt — cool gray-50 canvas, pure-white surfaces, hairline borders.
-     Zone hierarchy comes from 1px borders, not fills or shadows. */
-  --background: oklch(0.985 0.002 247.8);
-  --foreground: oklch(0.21 0.034 264.7);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.034 264.7);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.034 264.7);
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: var(--color-paper-raised);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-paper-raised);
+  --popover-foreground: var(--color-ink);
 
-  --muted: oklch(0.967 0.004 258);
-  --muted-foreground: oklch(0.554 0.046 257.4);
+  --muted: oklch(0.94 0.007 70);
+  --muted-foreground: var(--color-ink-muted);
 
-  --border: oklch(0.928 0.006 264.5);
-  --input: oklch(0.905 0.007 262);
-  --ring: oklch(0.546 0.245 262.9);
+  --border: var(--color-rule);
+  --input: oklch(0.86 0.01 70);
+  --ring: var(--color-focus);
 
-  /* Brand — cobalt (blue-600). The single accent; no second brand hue. */
-  --primary: oklch(0.546 0.245 262.9);
-  --primary-foreground: oklch(0.985 0.002 247.8);
+  --primary: var(--color-accent);
+  --primary-foreground: var(--color-accent-ink);
 
-  --secondary: oklch(0.967 0.004 258);
-  --secondary-foreground: oklch(0.28 0.03 264);
-  --accent: oklch(0.958 0.006 258);
-  --accent-foreground: oklch(0.28 0.03 264);
+  --secondary: oklch(0.94 0.007 70);
+  --secondary-foreground: oklch(0.28 0.02 55);
+  --accent: oklch(0.925 0.012 70);
+  --accent-foreground: oklch(0.28 0.02 55);
 
   --destructive: oklch(0.577 0.222 27);
   --destructive-foreground: oklch(0.985 0.006 27);
@@ -142,21 +142,20 @@
   --destructive-soft: oklch(0.95 0.035 25);
   --destructive-soft-foreground: oklch(0.505 0.18 27);
 
-  --chart-1: oklch(0.546 0.245 262.9);
+  --chart-1: var(--color-accent);
   --chart-2: oklch(0.62 0.12 235);
   --chart-3: oklch(0.6 0.13 155);
   --chart-4: oklch(0.65 0.15 70);
   --chart-5: oklch(0.55 0.16 300);
 
-  /* Sidebar shares the canvas tone; a hairline right border does the separating. */
-  --sidebar: oklch(0.985 0.002 247.8);
-  --sidebar-foreground: oklch(0.37 0.02 264);
-  --sidebar-primary: oklch(0.546 0.245 262.9);
-  --sidebar-primary-foreground: oklch(0.985 0.002 247.8);
-  --sidebar-accent: oklch(0.955 0.006 258);
-  --sidebar-accent-foreground: oklch(0.28 0.03 264);
-  --sidebar-border: oklch(0.928 0.006 264.5);
-  --sidebar-ring: oklch(0.546 0.245 262.9);
+  --sidebar: var(--color-panel-ink);
+  --sidebar-foreground: oklch(0.76 0.01 70);
+  --sidebar-primary: var(--color-accent);
+  --sidebar-primary-foreground: var(--color-accent-ink);
+  --sidebar-accent: oklch(0.24 0.014 55);
+  --sidebar-accent-foreground: oklch(0.96 0.004 75);
+  --sidebar-border: oklch(0.3 0.012 55);
+  --sidebar-ring: var(--color-focus);
 }
 
 .dark {
@@ -177,8 +176,8 @@
 
   /* L tuned to 0.57 so white-on-primary (the primary CTA) clears WCAG AA 4.5:1;
      cobalt-as-accent-text on the dark canvas lands at AA-large (~3.9). */
-  --primary: oklch(0.57 0.21 262);
-  --primary-foreground: oklch(0.99 0.01 262);
+  --primary: oklch(0.64 0.13 44);
+  --primary-foreground: oklch(0.99 0.006 75);
 
   --secondary: oklch(0.28 0.018 260);
   --secondary-foreground: oklch(0.93 0.006 258);
@@ -214,8 +213,8 @@
 
   --sidebar: oklch(0.2 0.02 260);
   --sidebar-foreground: oklch(0.72 0.02 258);
-  --sidebar-primary: oklch(0.57 0.21 262);
-  --sidebar-primary-foreground: oklch(0.99 0.01 262);
+  --sidebar-primary: oklch(0.64 0.13 44);
+  --sidebar-primary-foreground: oklch(0.99 0.006 75);
   --sidebar-accent: oklch(0.28 0.02 260);
   --sidebar-accent-foreground: oklch(0.95 0.006 258);
   --sidebar-border: oklch(0.3 0.02 260);
@@ -227,9 +226,21 @@
     @apply border-border outline-ring/50;
   }
 
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    overflow-x: clip;
   }
 
   body {
@@ -239,6 +250,7 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-feature-settings: 'cv11';
+    overflow-x: clip;
   }
 
   /* Headings — same family, heavier weight + tighter tracking; opsz auto-applies
@@ -263,6 +275,16 @@
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
+    }
+
+    a,
+    button {
+      transition-duration: 0ms !important;
+    }
+
+    a:active,
+    button:active {
+      transform: none !important;
     }
   }
 }

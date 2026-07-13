@@ -2,11 +2,13 @@
 import {
   CalendarClock,
   ListChecks,
-  PackageX,
-  MessagesSquare,
   FileText,
   Network,
   ChevronRight,
+  ArrowUpRight,
+  Clock3,
+  CircleAlert,
+  CheckCircle2,
 } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 import { tzTime } from '~/lib/tz'
@@ -197,175 +199,177 @@ watch(user, () => {
 })
 
 const dueLabel = (iso: string | null) => (iso ? formatDateTime(iso) : 'bez terminu')
+const todayLabel = new Intl.DateTimeFormat('pl-PL', {
+  weekday: 'long', day: 'numeric', month: 'long',
+}).format(new Date())
 </script>
 
 <template>
   <Landing v-if="!user" />
   <NuxtLayout v-else name="default">
-    <div class="space-y-6">
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight">{{ activeOrg?.name ?? 'OZMO' }}</h1>
-        <p class="text-muted-foreground">
-          Witaj{{ user?.email ? `, ${user.email}` : '' }}.
-          <span v-if="role">Twoja rola: {{ roleLabels[role] }}.</span>
-        </p>
-      </div>
+    <div class="mx-auto max-w-[92rem] space-y-6">
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+          <p class="mb-1 text-sm text-muted-foreground">Dzień dobry · {{ todayLabel }}</p>
+          <h1 class="min-w-0 [overflow-wrap:anywhere] text-2xl font-bold tracking-tight sm:text-3xl">
+            {{ activeOrg?.name ?? 'OZMO' }}
+          </h1>
+          <p v-if="role" class="mt-1 text-sm text-muted-foreground">{{ roleLabels[role] }} · wszystko ważne na jednej stronie</p>
+        </div>
+        <NuxtLink
+          to="/tasks"
+          class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[var(--color-panel-ink)] px-4 text-sm font-semibold text-[var(--color-on-ink)] transition-transform duration-150 active:translate-y-px"
+        >
+          Otwórz zadania <ArrowUpRight class="size-4" />
+        </NuxtLink>
+      </header>
 
-      <NuxtLink v-if="nextShiftLabel" to="/schedule" class="block">
-        <Card class="transition-colors hover:bg-accent">
-          <CardHeader class="pb-3">
-            <CardTitle class="flex items-center gap-2 text-base">
-              <CalendarClock class="size-4" /> Twoja najbliższa zmiana
-            </CardTitle>
-            <CardDescription class="text-foreground">
-              {{ nextShiftLabel }}
-              <template v-if="nextShift?.position"> · {{ nextShift.position }}</template>
-              <template v-if="nextShift?.branches?.name"> · {{ nextShift.branches.name }}</template>
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </NuxtLink>
+      <section class="grid grid-cols-2 gap-3 md:grid-cols-6 xl:grid-cols-12" aria-label="Stan dnia">
+        <div class="col-span-2 rounded-[var(--radius-card)] bg-[var(--color-panel-pink)] p-5 text-[var(--color-panel-ink)] md:col-span-3 xl:col-span-5">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm font-semibold">Otwarte zadania (sieć)</p>
+              <p class="mt-5 text-4xl font-bold tabular-nums">{{ dash?.network?.openTasks ?? dash?.myTasks.length ?? 0 }}</p>
+            </div>
+            <ListChecks class="size-5" />
+          </div>
+          <div class="mt-7 flex flex-wrap gap-x-6 gap-y-2 border-t border-[var(--color-panel-rule)] pt-3 text-sm">
+            <span v-if="dash?.network"><strong class="tabular-nums">{{ dash.network.closedReports }}/{{ dash.network.branches }}</strong> raportów zamkniętych</span>
+            <span><strong class="tabular-nums">{{ dash?.alertCount ?? 0 }}</strong> alertów magazynowych</span>
+          </div>
+        </div>
 
-      <div v-if="dash?.network" class="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader class="pb-2">
-            <CardDescription class="flex items-center gap-1.5">
-              <Network class="size-3.5" /> Oddziały
-            </CardDescription>
-            <CardTitle class="text-2xl tabular-nums">{{ dash.network.branches }}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader class="pb-2">
-            <CardDescription class="flex items-center gap-1.5">
-              <ListChecks class="size-3.5" /> Otwarte zadania (sieć)
-            </CardDescription>
-            <CardTitle class="text-2xl tabular-nums">{{ dash.network.openTasks }}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader class="pb-2">
-            <CardDescription class="flex items-center gap-1.5">
-              <FileText class="size-3.5" /> Zamknięte raporty dziś
-            </CardDescription>
-            <CardTitle class="text-2xl tabular-nums">
-              {{ dash.network.closedReports }}<span class="text-base text-muted-foreground">/{{ dash.network.branches }}</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+        <NuxtLink
+          to="/schedule"
+          class="rounded-[var(--radius-card)] bg-[var(--color-panel-yellow)] p-4 text-[var(--color-panel-ink)] transition-transform duration-150 active:translate-y-px md:col-span-3 md:p-5 xl:col-span-4"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <p class="text-sm font-semibold">Najbliższa zmiana</p>
+            <CalendarClock class="size-5" />
+          </div>
+          <p class="mt-5 text-base font-semibold leading-snug sm:text-lg">{{ nextShiftLabel ?? 'Brak zaplanowanej zmiany' }}</p>
+          <p v-if="nextShift?.position || nextShift?.branches?.name" class="mt-2 text-sm opacity-70">
+            {{ [nextShift?.position, nextShift?.branches?.name].filter(Boolean).join(' · ') }}
+          </p>
+        </NuxtLink>
 
-      <div class="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader class="pb-3">
-            <CardTitle class="flex items-center justify-between text-base">
-              <span class="flex items-center gap-2"><ListChecks class="size-4" /> Moje zadania</span>
-              <NuxtLink to="/tasks" class="text-xs font-normal text-muted-foreground hover:text-foreground">
-                Wszystkie <ChevronRight class="inline size-3" />
-              </NuxtLink>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p v-if="!dash?.myTasks.length" class="py-4 text-center text-sm text-muted-foreground">
-              Nie masz przypisanych zadań.
-            </p>
-            <ul v-else class="space-y-1.5">
+        <NuxtLink
+          to="/branches"
+          class="flex min-h-36 flex-col justify-between rounded-[var(--radius-card)] bg-[var(--color-panel-blue)] p-4 text-[var(--color-panel-ink)] transition-transform duration-150 active:translate-y-px md:col-span-2 md:p-5 xl:col-span-3"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <p class="text-sm font-semibold">Oddziały</p>
+            <Network class="size-5" />
+          </div>
+          <p class="text-4xl font-bold tabular-nums">{{ dash?.network?.branches ?? dash?.branchCount ?? 0 }}</p>
+        </NuxtLink>
+      </section>
+
+      <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(19rem,0.75fr)]">
+        <section class="min-w-0 overflow-hidden rounded-[var(--radius-card)] border bg-card" aria-labelledby="tasks-heading">
+          <div class="flex items-center justify-between gap-4 border-b px-4 py-4 sm:px-6">
+            <div>
+              <h2 id="tasks-heading" class="text-lg font-semibold">Moje zadania</h2>
+              <p class="text-sm text-muted-foreground">Najbliższe terminy i priorytety</p>
+            </div>
+            <NuxtLink to="/tasks" class="flex min-h-11 items-center gap-1 whitespace-nowrap text-sm font-medium text-muted-foreground hover:text-foreground">
+              Wszystkie <ChevronRight class="size-4" />
+            </NuxtLink>
+          </div>
+
+          <div v-if="!dash?.myTasks.length" class="grid min-h-72 place-items-center px-6 text-center">
+            <div>
+              <CheckCircle2 class="mx-auto mb-3 size-7 text-success" />
+              <p class="font-medium">Nie masz przypisanych zadań</p>
+              <p class="mt-1 text-sm text-muted-foreground">Nowe zadania pojawią się tutaj.</p>
+            </div>
+          </div>
+          <ul v-else class="divide-y">
+            <li v-for="t in dash.myTasks" :key="t.id">
               <NuxtLink
-                v-for="t in dash.myTasks"
-                :key="t.id"
                 :to="`/tasks?task=${t.id}`"
-                class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
+                class="group grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-muted/70 sm:px-6"
               >
-                <span class="min-w-0 flex-1 truncate text-sm">{{ t.title }}</span>
-                <Badge :variant="(priorityVariant[t.priority] as any) ?? 'secondary'" class="shrink-0 text-[10px]">
+                <span class="grid size-8 place-items-center rounded-full border bg-background text-muted-foreground group-hover:text-foreground">
+                  <Clock3 class="size-4" />
+                </span>
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-medium">{{ t.title }}</span>
+                  <span class="mt-0.5 block text-xs text-muted-foreground">{{ t.status === 'in_progress' ? 'W trakcie' : 'Do zrobienia' }}</span>
+                </span>
+                <Badge :variant="(priorityVariant[t.priority] as any) ?? 'secondary'" class="shrink-0 whitespace-nowrap text-[10px]">
                   {{ dueLabel(t.due_at) }}
                 </Badge>
               </NuxtLink>
-            </ul>
-          </CardContent>
-        </Card>
+            </li>
+          </ul>
+        </section>
 
-        <Card>
-          <CardHeader class="pb-3">
-            <CardTitle class="flex items-center justify-between text-base">
-              <span class="flex items-center gap-2"><PackageX class="size-4" /> Alerty magazynowe</span>
-              <Badge v-if="dash?.alertCount" variant="danger" class="text-[10px]">{{ dash.alertCount }}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p v-if="!dash?.alerts.length" class="py-4 text-center text-sm text-muted-foreground">
-              Wszystkie stany powyżej minimum.
-            </p>
-            <ul v-else class="space-y-1.5">
-              <NuxtLink
-                v-for="(a, i) in dash.alerts"
-                :key="i"
-                to="/stock"
-                class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
-              >
-                <span class="min-w-0 flex-1 truncate text-sm">
-                  {{ a.name }}
-                  <span v-if="a.branch" class="text-muted-foreground">· {{ a.branch }}</span>
-                </span>
-                <Badge variant="warning" class="shrink-0 tabular-nums text-[10px]">
-                  {{ a.qty }} / {{ a.min }}
-                </Badge>
-              </NuxtLink>
-            </ul>
-          </CardContent>
-        </Card>
+        <aside class="min-w-0" aria-labelledby="today-heading">
+          <div class="flex items-end justify-between gap-3 border-b pb-4">
+            <div>
+              <h2 id="today-heading" class="text-lg font-semibold">Dzisiaj</h2>
+              <p class="text-sm capitalize text-muted-foreground">{{ todayLabel }}</p>
+            </div>
+            <span class="rounded-full bg-[var(--color-panel-ink)] px-3 py-1 text-xs font-medium text-[var(--color-on-ink)]">Na żywo</span>
+          </div>
 
-        <Card>
-          <CardHeader class="pb-3">
-            <CardTitle class="flex items-center justify-between text-base">
-              <span class="flex items-center gap-2"><MessagesSquare class="size-4" /> Nieprzeczytane czaty</span>
-              <Badge v-if="chat.totalUnread.value" variant="info" class="text-[10px]">{{ chat.totalUnread.value }}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p v-if="!unreadChannels.length" class="py-4 text-center text-sm text-muted-foreground">
-              Brak nowych wiadomości.
-            </p>
-            <ul v-else class="space-y-1.5">
-              <NuxtLink
-                v-for="c in unreadChannels"
-                :key="c.id"
-                to="/chat"
-                class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
-              >
-                <span class="min-w-0 flex-1 truncate text-sm">{{ c.name }}</span>
-                <Badge variant="info" class="shrink-0 text-[10px]">{{ c.unread }}</Badge>
-              </NuxtLink>
-            </ul>
-          </CardContent>
-        </Card>
+          <div class="relative ml-2 space-y-7 border-l py-6 pl-6">
+            <section>
+              <div class="absolute -left-[7px] mt-1 size-3 rounded-full border-2 border-background bg-[var(--color-accent)]" />
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold">Alerty magazynowe</h3>
+                <Badge v-if="dash?.alertCount" variant="danger">{{ dash.alertCount }}</Badge>
+              </div>
+              <p v-if="!dash?.alerts.length" class="mt-2 text-sm text-muted-foreground">Stany są powyżej minimum.</p>
+              <ul v-else class="mt-3 space-y-2">
+                <li v-for="(a, i) in dash.alerts.slice(0, 3)" :key="i">
+                  <NuxtLink to="/stock" class="flex min-h-11 items-center justify-between gap-3 rounded-lg bg-[var(--color-panel-green)] px-3 py-2 text-sm text-[var(--color-panel-ink)]">
+                    <span class="min-w-0 truncate">{{ a.name }}<span v-if="a.branch" class="opacity-65"> · {{ a.branch }}</span></span>
+                    <strong class="shrink-0 tabular-nums">{{ a.qty }} / {{ a.min }}</strong>
+                  </NuxtLink>
+                </li>
+              </ul>
+            </section>
 
-        <Card>
-          <CardHeader class="pb-3">
-            <CardTitle class="flex items-center justify-between text-base">
-              <span class="flex items-center gap-2"><FileText class="size-4" /> Notatki dnia</span>
-              <NuxtLink to="/reports" class="text-xs font-normal text-muted-foreground hover:text-foreground">
-                Raporty <ChevronRight class="inline size-3" />
-              </NuxtLink>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p v-if="!dash?.notes.length" class="py-4 text-center text-sm text-muted-foreground">
-              Brak notatek na dziś.
-            </p>
-            <ul v-else class="space-y-2">
-              <li v-for="n in dash.notes" :key="n.id" class="flex items-start gap-2">
-                <Badge :variant="n.severity === 'issue' ? 'danger' : 'info'" class="shrink-0 text-[10px]">
-                  {{ n.severity === 'issue' ? 'Problem' : 'Info' }}
-                </Badge>
-                <span class="min-w-0 flex-1 text-sm">
-                  <span class="line-clamp-2">{{ n.body }}</span>
-                  <span v-if="n.branch" class="text-xs text-muted-foreground">{{ n.branch }}</span>
-                </span>
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
+            <section>
+              <div class="absolute -left-[7px] mt-1 size-3 rounded-full border-2 border-background bg-info" />
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold">Nieprzeczytane czaty</h3>
+                <Badge v-if="chat.totalUnread.value" variant="info">{{ chat.totalUnread.value }}</Badge>
+              </div>
+              <p v-if="!unreadChannels.length" class="mt-2 text-sm text-muted-foreground">Brak nowych wiadomości.</p>
+              <ul v-else class="mt-2 space-y-1">
+                <li v-for="c in unreadChannels.slice(0, 3)" :key="c.id">
+                  <NuxtLink to="/chat" class="flex min-h-11 items-center justify-between gap-3 text-sm hover:underline">
+                    <span class="truncate">{{ c.name }}</span><span class="tabular-nums text-muted-foreground">{{ c.unread }}</span>
+                  </NuxtLink>
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <div class="absolute -left-[7px] mt-1 size-3 rounded-full border-2 border-background bg-warning" />
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold">Notatki dnia</h3>
+                <NuxtLink to="/reports" class="min-h-11 whitespace-nowrap text-sm text-muted-foreground hover:text-foreground">Raporty</NuxtLink>
+              </div>
+              <p v-if="!dash?.notes.length" class="mt-2 text-sm text-muted-foreground">Brak notatek na dziś.</p>
+              <ul v-else class="mt-2 space-y-3">
+                <li v-for="n in dash.notes.slice(0, 3)" :key="n.id" class="text-sm">
+                  <div class="flex items-start gap-2">
+                    <CircleAlert v-if="n.severity === 'issue'" class="mt-0.5 size-4 shrink-0 text-destructive" />
+                    <FileText v-else class="mt-0.5 size-4 shrink-0 text-info" />
+                    <span class="min-w-0">
+                      <span class="line-clamp-2">{{ n.body }}</span>
+                      <span v-if="n.branch" class="mt-0.5 block text-xs text-muted-foreground">{{ n.branch }}</span>
+                    </span>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
+        </aside>
       </div>
     </div>
   </NuxtLayout>

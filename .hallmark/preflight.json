@@ -1,0 +1,10 @@
+{
+  "date": "2026-07-13",
+  "framework": "Nuxt 4 / Vue 3",
+  "styling": "Tailwind CSS v4 with OKLCH custom properties",
+  "font": "Inter Variable, self-hosted",
+  "icons": "Lucide",
+  "motion": "motion-cut; CSS state transitions only",
+  "spacing": "4-point scale",
+  "design_system": "design.md"
+}
