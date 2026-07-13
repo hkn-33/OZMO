@@ -389,7 +389,7 @@ Cztery migracje: `20260709210000_phase7_username.sql`, `..210100_phase7_subscrip
 rozszerzone o `'/'` — niezalogowani widzą landing zamiast redirectu na login.
 `pages/index.vue` ma `layout: false` i renderuje `<Landing />` dla anonima albo
 `<NuxtLayout name="default">` z pulpitem dla zalogowanego. `components/Landing.vue`:
-brandowy Split Studio spójny z aplikacją, edge-aligned navbar, żywy podgląd dnia, moduły
+brandowy Map / Diagram spójny z aplikacją, pływający navbar, ręcznie rysowana mapa operacji SVG, moduły
 w formie spec-listy, 3 pakiety (placeholder: Starter 149 / Pro 249 / Sieć 399 zł/mc
 per lokal, „ceny wkrótce"), FAQ i statement footer. CTA prowadzą do publicznego demo lub
 `/auth/register`. Rejestracja: podtytuł „Załóż konto i przetestuj OZMO w trybie demo".

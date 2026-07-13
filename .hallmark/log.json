@@ -1,6 +1,14 @@
 [
   {
     "date": "2026-07-13",
+    "macrostructure": "Map / Diagram",
+    "theme": "OZMO",
+    "enrichment": "E5 hand-built SVG",
+    "brief": "Graphic-led landing with an operations map",
+    "scope": "landing"
+  },
+  {
+    "date": "2026-07-13",
     "macrostructure": "Split Studio",
     "theme": "OZMO",
     "enrichment": "E4 floating product scene",
