@@ -26,4 +26,5 @@ test('register → onboarding → create org → dashboard shows org name', asyn
   await expect(
     page.getByRole('heading', { level: 1, name: orgName }),
   ).toBeVisible()
+  await expect(page.getByText('Główny lokal').first()).toBeVisible()
 })

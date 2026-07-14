@@ -37,17 +37,16 @@ test('stock: delivery then usage below minimum triggers stock_low notification',
     })
   expect(bpsErr).toBeNull()
 
-  await op.getByRole('tab', { name: 'Przyjęcie/Wydanie' }).click()
+  await op.getByRole('tab', { name: 'Dodaj ruch' }).click()
 
-  // Delivery line (type defaults to "Dostawa")
+  // Delivery line is the default quick action.
   await op.getByRole('combobox').filter({ hasText: 'Wybierz produkt' }).click()
   await op.getByRole('option', { name: prodRe }).click()
   await op.fill('#mv-qty', '10')
   await op.getByRole('button', { name: 'Dodaj do listy' }).click()
 
-  // Usage line: switch type to "Zużycie"
-  await op.getByRole('combobox').filter({ hasText: 'Dostawa' }).click()
-  await op.getByRole('option', { name: 'Zużycie' }).click()
+  // Usage line: switch with one quick-action click.
+  await op.getByRole('button', { name: 'Zużycie' }).click()
   await op.getByRole('combobox').filter({ hasText: 'Wybierz produkt' }).click()
   await op.getByRole('option', { name: prodRe }).click()
   await op.fill('#mv-qty', '7')

@@ -5,11 +5,6 @@ export interface BranchLite {
   name: string
 }
 
-/**
- * Kontekst aktywnego oddziału (w obrębie aktywnej organizacji).
- * Wzorowane na useOrg: lista dostępnych oddziałów (RLS decyduje o widoczności),
- * aktywny oddział trzymany w cookie.
- */
 export function useBranch() {
   const supabase = useSupabaseClient<Database>()
   const { activeOrgId } = useOrg()
@@ -47,10 +42,11 @@ export function useBranch() {
   const activeBranch = computed(
     () => branches.value.find((b) => b.id === activeBranchId.value) ?? null,
   )
+  const hasMultipleBranches = computed(() => branches.value.length > 1)
 
   function setActive(id: string) {
     if (branches.value.some((b) => b.id === id)) activeBranchId.value = id
   }
 
-  return { branches, activeBranchId, activeBranch, loaded, load, setActive }
+  return { branches, activeBranchId, activeBranch, hasMultipleBranches, loaded, load, setActive }
 }

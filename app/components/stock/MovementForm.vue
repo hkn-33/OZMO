@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
-import { Plus, Trash2 } from '@lucide/vue'
+import { PackageMinus, PackagePlus, Plus, Trash2, TriangleAlert } from '@lucide/vue'
 import type { Database } from '~~/shared/types/database.types'
 
 type MovementType = Database['public']['Enums']['stock_movement_type']
@@ -18,6 +18,12 @@ const typeLabel: Record<MovementType, string> = {
   correction: 'Korekta',
   transfer: 'Transfer',
 }
+
+const quickTypes = [
+  { value: 'delivery' as const, label: 'Przyjmij', icon: PackagePlus },
+  { value: 'usage' as const, label: 'Zużycie', icon: PackageMinus },
+  { value: 'waste' as const, label: 'Strata', icon: TriangleAlert },
+]
 
 interface ProductLite { id: string; name: string; unit: string }
 interface SupplierLite { id: string; name: string }
@@ -39,7 +45,7 @@ const form = reactive({
   type: 'delivery' as MovementType,
   productId: '',
   qty: '',
-  direction: 'minus' as 'plus' | 'minus', // only for correction/transfer
+  direction: 'minus' as 'plus' | 'minus',
   supplierId: '',
   docRef: '',
   note: '',
@@ -47,6 +53,13 @@ const form = reactive({
 
 const showSupplier = computed(() => form.type === 'delivery')
 const showDirection = computed(() => form.type === 'correction' || form.type === 'transfer')
+const formTitle = computed(() => ({
+  delivery: 'Przyjmij dostawę',
+  usage: 'Zapisz zużycie',
+  waste: 'Zgłoś stratę',
+  correction: 'Skoryguj stan',
+  transfer: 'Zapisz transfer',
+})[form.type])
 
 interface Line {
   type: MovementType
@@ -65,7 +78,7 @@ function computeDelta(): number | null {
   if (!Number.isFinite(q) || q <= 0) return null
   if (form.type === 'delivery') return q
   if (form.type === 'usage' || form.type === 'waste') return -q
-  return form.direction === 'plus' ? q : -q // correction/transfer
+  return form.direction === 'plus' ? q : -q
 }
 
 function addLine() {
@@ -113,8 +126,6 @@ async function submitAll() {
     supplier_id: l.supplierId,
     doc_ref: l.docRef,
     note: l.note,
-    // created_by pochodzi z DEFAULT auth.uid() (bulk insert nie może polegać na
-    // pominięciu undefined jak insert pojedynczego wiersza).
   }))
   const { error } = await supabase.from('stock_movements').insert(rows)
   saving.value = false
@@ -122,7 +133,7 @@ async function submitAll() {
     toast.error('Nie udało się zapisać ruchów', { description: error.message })
     return
   }
-  toast.success(`Zapisano ${rows.length} ${rows.length === 1 ? 'ruch' : 'ruchy/ów'}`)
+  toast.success(`Zapisano pozycji: ${rows.length}`)
   lines.value = []
 }
 </script>
@@ -130,16 +141,34 @@ async function submitAll() {
 <template>
   <div class="grid gap-6 lg:grid-cols-2">
     <div class="space-y-4 rounded-lg border p-4">
-      <h2 class="font-semibold">Nowa pozycja</h2>
+      <div>
+        <h2 class="font-semibold">{{ formTitle }}</h2>
+        <p class="mt-1 text-sm text-muted-foreground">Wybierz akcję, produkt i ilość.</p>
+      </div>
 
-      <div class="space-y-2">
-        <Label>Typ ruchu</Label>
-        <Select v-model="form.type">
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="(label, t) in typeLabel" :key="t" :value="t">{{ label }}</SelectItem>
-          </SelectContent>
-        </Select>
+      <div class="grid grid-cols-3 gap-2" aria-label="Najczęstsze ruchy magazynowe">
+        <Button
+          v-for="item in quickTypes"
+          :key="item.value"
+          type="button"
+          :variant="form.type === item.value ? 'default' : 'outline'"
+          class="h-auto min-h-16 flex-col gap-1.5 px-2"
+          :aria-pressed="form.type === item.value"
+          @click="form.type = item.value"
+        >
+          <component :is="item.icon" class="size-4" />
+          {{ item.label }}
+        </Button>
+      </div>
+
+      <div class="flex items-center gap-2 text-sm">
+        <span class="mr-auto text-muted-foreground">Rzadziej:</span>
+        <Button type="button" size="sm" :variant="form.type === 'correction' ? 'secondary' : 'ghost'" @click="form.type = 'correction'">
+          Korekta
+        </Button>
+        <Button type="button" size="sm" :variant="form.type === 'transfer' ? 'secondary' : 'ghost'" @click="form.type = 'transfer'">
+          Transfer
+        </Button>
       </div>
 
       <div class="space-y-2">

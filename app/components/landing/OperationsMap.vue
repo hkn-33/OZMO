@@ -1,7 +1,7 @@
 <template>
   <figure class="operations-map" aria-labelledby="operations-map-title">
     <figcaption id="operations-map-title" class="sr-only">
-      OZMO łączy zadania, grafik, zespół, magazyn, raporty i koszty dla wszystkich lokali.
+      OZMO łączy zadania, grafik, zespół, magazyn, raporty i koszty firmy.
     </figcaption>
 
     <svg class="operations-map-desktop" viewBox="0 0 1200 620" role="img" aria-hidden="true">
@@ -105,21 +105,21 @@
       </g>
     </svg>
 
-    <svg class="operations-map-mobile" viewBox="0 0 360 760" role="img" aria-hidden="true">
-      <path class="map-mobile-line" d="M180 98V662" fill="none" stroke="var(--color-panel-rule)" stroke-width="2" />
+    <svg class="operations-map-mobile" viewBox="0 0 360 500" role="img" aria-hidden="true">
+      <path class="map-mobile-line" d="M180 98V460" fill="none" stroke="var(--color-panel-rule)" stroke-width="2" />
       <circle class="map-signals" r="5" fill="var(--color-accent)">
-        <animateMotion dur="5s" repeatCount="indefinite" path="M180 98V662" />
+        <animateMotion dur="4s" repeatCount="indefinite" path="M180 98V460" />
       </circle>
       <g class="map-hub" transform="translate(70 20)">
         <rect width="220" height="110" rx="55" fill="var(--color-panel-ink)" />
         <text x="110" y="69" text-anchor="middle" class="map-brand">ozmo<tspan class="map-brand-dot">.</tspan></text>
       </g>
-      <g v-for="(node, index) in mobileNodes" :key="node.label" class="map-node" :style="{ '--delay': `${80 + index * 60}ms` }" :transform="`translate(${index % 2 ? 86 : 18} ${154 + index * 96})`">
-        <rect width="256" height="74" rx="16" :fill="node.color" />
-        <text x="18" y="31" class="map-label">{{ node.label }}</text>
-        <text x="18" y="53" class="map-caption-dark">{{ node.detail }}</text>
-        <circle cx="229" cy="37" r="14" fill="var(--color-panel-ink)" opacity=".12" />
-        <path d="m223 37 4 4 8-9" fill="none" stroke="var(--color-panel-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      <g v-for="(node, index) in mobileNodes" :key="node.label" class="map-node" :style="{ '--delay': `${80 + index * 60}ms` }" :transform="`translate(${index % 2 ? 86 : 18} ${148 + index * 82})`">
+        <rect width="256" height="64" rx="16" :fill="node.color" />
+        <text x="18" y="27" class="map-label">{{ node.label }}</text>
+        <text x="18" y="47" class="map-caption-dark">{{ node.detail }}</text>
+        <circle cx="229" cy="32" r="14" fill="var(--color-panel-ink)" opacity=".12" />
+        <path d="m223 32 4 4 8-9" fill="none" stroke="var(--color-panel-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
       </g>
     </svg>
   </figure>
@@ -127,12 +127,10 @@
 
 <script setup lang="ts">
 const mobileNodes = [
-  { label: 'Zadania', detail: 'checklisty i odpowiedzialność', color: 'var(--color-panel-pink)' },
-  { label: 'Grafik', detail: 'zmiany całego zespołu', color: 'var(--color-panel-yellow)' },
-  { label: 'Czaty', detail: 'ustalenia przy pracy', color: 'var(--color-panel-blue)' },
-  { label: 'Magazyn', detail: 'stany każdego lokalu', color: 'var(--color-panel-green)' },
-  { label: 'Raporty', detail: 'zamknięcie dnia', color: 'var(--color-panel-pink)' },
-  { label: 'Koszty', detail: 'wynik całej sieci', color: 'var(--color-panel-yellow)' },
+  { label: 'Zadania', detail: 'checklisty i terminy', color: 'var(--color-panel-pink)' },
+  { label: 'Grafik', detail: 'zmiany zespołu', color: 'var(--color-panel-yellow)' },
+  { label: 'Magazyn', detail: 'stany i braki', color: 'var(--color-panel-green)' },
+  { label: 'Raporty', detail: 'podsumowanie dnia', color: 'var(--color-panel-blue)' },
 ]
 </script>
 

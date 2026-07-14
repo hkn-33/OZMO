@@ -18,7 +18,7 @@ const INDUSTRIES = [
 
 const step = ref<1 | 2>(1)
 const name = ref('')
-const industry = ref<string>('gastronomia')
+const industry = ref<string>('inna')
 const loading = ref(false)
 
 function next() {
@@ -40,7 +40,7 @@ async function onSubmit() {
     return
   }
   await load(true)
-  toast.success('Organizacja utworzona')
+  toast.success('Firma i pierwszy lokal są gotowe')
   await navigateTo('/')
 }
 </script>
@@ -52,7 +52,7 @@ async function onSubmit() {
         <CardTitle>Utwórz firmę</CardTitle>
         <CardDescription>
           {{ step === 1
-            ? 'Zacznij od utworzenia firmy. Oddziały i zespół dodasz później.'
+            ? 'Podaj nazwę firmy. Pierwszy lokal utworzymy automatycznie.'
             : 'Czym zajmuje się Twoja firma? Dobierzemy startowe checklisty, kategorie kosztów i sekcje raportów.' }}
         </CardDescription>
       </CardHeader>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Search } from '@lucide/vue'
+import { ClipboardCopy, Search, TriangleAlert } from '@lucide/vue'
+import { toast } from 'vue-sonner'
 import type { Database } from '~~/shared/types/database.types'
 
 const props = defineProps<{ orgId: string; branchId: string }>()
@@ -17,6 +18,7 @@ interface Row {
 
 const search = ref('')
 const categoryFilter = ref<string>('all')
+const onlyShortages = ref(false)
 
 const { data, pending, refresh } = await useAsyncData(
   () => `stock-levels:${props.branchId}`,
@@ -63,17 +65,31 @@ function status(r: Row): 'brak' | 'niski' | 'ok' {
   return 'ok'
 }
 const statusRank = { brak: 0, niski: 1, ok: 2 }
+const needsRestock = (r: Row) => r.min_stock > 0 && r.qty < r.min_stock
+const shortages = computed(() => (data.value ?? []).filter(needsRestock))
 
 const rows = computed(() => {
   const q = search.value.trim().toLowerCase()
   return (data.value ?? [])
     .filter((r) => (categoryFilter.value === 'all' || r.category === categoryFilter.value))
+    .filter((r) => !onlyShortages.value || needsRestock(r))
     .filter((r) => !q || r.name.toLowerCase().includes(q))
     .sort((a, b) => {
       const s = statusRank[status(a)] - statusRank[status(b)]
       return s !== 0 ? s : a.name.localeCompare(b.name)
     })
 })
+
+async function copyShortages() {
+  const list = shortages.value.map((r) => `${r.name}: ${r.qty} ${r.unit} (min. ${r.min_stock})`).join('\n')
+  if (!list) return
+  try {
+    await navigator.clipboard.writeText(list)
+    toast.success('Lista do zamówienia skopiowana')
+  } catch {
+    toast.error('Nie udało się skopiować listy')
+  }
+}
 
 const historyOpen = ref(false)
 const historyProduct = ref<Row | null>(null)
@@ -87,6 +103,26 @@ defineExpose({ refresh })
 
 <template>
   <div class="space-y-4">
+    <div class="flex flex-col gap-3 rounded-lg border bg-muted/35 p-4 sm:flex-row sm:items-center">
+      <div class="flex min-w-0 items-center gap-3">
+        <span class="grid size-9 shrink-0 place-items-center rounded-full bg-warning/15 text-warning-foreground">
+          <TriangleAlert class="size-4" />
+        </span>
+        <div>
+          <p class="font-medium">Do uzupełnienia: {{ shortages.length }}</p>
+          <p class="text-sm text-muted-foreground">Produkty poniżej ustawionego minimum.</p>
+        </div>
+      </div>
+      <div v-if="shortages.length" class="flex gap-2 sm:ml-auto">
+        <Button size="sm" :variant="onlyShortages ? 'default' : 'outline'" @click="onlyShortages = !onlyShortages">
+          {{ onlyShortages ? 'Pokaż wszystkie' : 'Pokaż listę' }}
+        </Button>
+        <Button size="sm" variant="outline" aria-label="Kopiuj listę do zamówienia" @click="copyShortages">
+          <ClipboardCopy class="size-4" />
+        </Button>
+      </div>
+    </div>
+
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
       <div class="relative flex-1">
         <Search class="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -106,7 +142,7 @@ defineExpose({ refresh })
       v-else-if="!rows.length"
       class="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground"
     >
-      Brak produktów. Dodaj produkty w zakładce „Produkty".
+      {{ onlyShortages ? 'Brak produktów do uzupełnienia.' : 'Brak produktów. Dodaj produkty w zakładce „Produkty".' }}
     </p>
 
     <div v-else class="overflow-x-auto rounded-lg border">

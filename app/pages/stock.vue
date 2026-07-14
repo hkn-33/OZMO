@@ -8,7 +8,7 @@ const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
 
 const { activeOrgId, isAdmin, load: loadOrg } = useOrg()
-const { activeBranchId, activeBranch, load: loadBranch } = useBranch()
+const { activeBranchId, activeBranch, hasMultipleBranches, load: loadBranch } = useBranch()
 await loadOrg()
 await loadBranch()
 watch(activeOrgId, () => loadBranch(true))
@@ -50,11 +50,11 @@ const tab = ref<'levels' | 'network' | 'movements' | 'stocktake' | 'products' | 
     <Tabs v-else v-model="tab">
       <TabsList class="flex-wrap">
         <TabsTrigger value="levels"><Boxes class="mr-1.5 size-4" /> Stany</TabsTrigger>
-        <TabsTrigger v-if="isAdmin" value="network">
+        <TabsTrigger v-if="isAdmin && hasMultipleBranches" value="network">
           <Network class="mr-1.5 size-4" /> Cała sieć
         </TabsTrigger>
         <TabsTrigger value="movements">
-          <ArrowLeftRight class="mr-1.5 size-4" /> Przyjęcie/Wydanie
+          <ArrowLeftRight class="mr-1.5 size-4" /> Dodaj ruch
         </TabsTrigger>
         <TabsTrigger value="stocktake">
           <ClipboardCheck class="mr-1.5 size-4" /> Inwentaryzacja
@@ -76,7 +76,7 @@ const tab = ref<'levels' | 'network' | 'movements' | 'stocktake' | 'products' | 
         />
       </TabsContent>
 
-      <TabsContent v-if="isAdmin" value="network" class="mt-4">
+      <TabsContent v-if="isAdmin && hasMultipleBranches" value="network" class="mt-4">
         <StockNetwork v-if="activeOrgId" :key="activeOrgId" :org-id="activeOrgId" />
       </TabsContent>
 

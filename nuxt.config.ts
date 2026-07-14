@@ -8,6 +8,19 @@ export default defineNuxtConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: [
+        '@lucide/vue',
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+        '@vueuse/core',
+        'class-variance-authority',
+        'clsx',
+        'reka-ui',
+        'tailwind-merge',
+        'vue-sonner',
+      ],
+    },
   },
 
   modules: ['shadcn-nuxt', '@nuxtjs/supabase', '@vite-pwa/nuxt'],
@@ -20,10 +33,10 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'OZMO — system operacyjny dla sieci lokali',
+      name: 'OZMO — codzienne operacje firmy',
       short_name: 'OZMO',
       description:
-        'System operacyjny dla sieci lokali: zadania, grafik, magazyn, raporty i czaty w jednym miejscu.',
+        'Zadania, grafik, magazyn, raporty i czaty dla jednego lub wielu lokali.',
       lang: 'pl',
       theme_color: '#155dfc',
       background_color: '#f8fafc',
@@ -68,8 +81,7 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: '/auth/login',
       callback: '/auth/confirm',
-      // `/` publiczne (landing dla niezalogowanych); reszta chroniona.
-      exclude: ['/auth/*', '/'],
+      exclude: ['/auth/*', '/', '/privacy', '/terms'],
     },
     types: '~~/shared/types/database.types.ts',
   },

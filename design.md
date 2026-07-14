@@ -1,13 +1,13 @@
 # OZMO — Design Document
 
-> System do zarządzania firmą wielooddziałową (dowolna branża: kawiarnia, restauracja, hotel, magazyn, hurtownia, sklep…). Zastępuje Excela, WhatsAppa, papierowe checklisty i rozproszone narzędzia jednym systemem. Nic branżowego nie jest zaszyte na sztywno — branżę wybiera się przy zakładaniu firmy, a treści (checklisty, kategorie kosztów, sekcje raportu) są konfigurowalne.
+> System codziennych operacji dla firmy z jednym lub wieloma oddziałami (dowolna branża pracująca zmianowo). Zastępuje Excela, WhatsAppa, papierowe checklisty i rozproszone narzędzia jednym systemem. Nic branżowego nie jest zaszyte na sztywno — branżę wybiera się przy zakładaniu firmy, a treści są konfigurowalne.
 >
 > **Ten dokument jest źródłem prawdy.** Każda zmiana architektury lub zakresu musi być najpierw odnotowana tutaj.
 
 ## 1. Wizja i zakres
 
-- Docelowo: sieć ~12 lokali (oddziałów) w ramach jednej lub wielu firm.
-- Użytkownicy: właściciel sieci, menadżerowie lokali, pracownicy zmianowi.
+- Docelowo: od jednego lokalu do firmy z wieloma oddziałami.
+- Użytkownicy: właściciel firmy, menadżerowie lokali, pracownicy zmianowi.
 - Priorytet UX: **mobile-first**, prostota — pracownicy nie są techniczni. Maks. 2–3 kliknięcia do każdej codziennej akcji.
 - Języki UI: polski (na start).
 - **Model i licencja (faza 11):** OZMO jest **open source na licencji AGPL-3.0** (self-host za darmo). Źródłem przychodu jest **wersja hostowana** (płatna, z utrzymaniem i wsparciem). Repo: `https://github.com/hkn-33/OZMO`. Szczegóły techniczne self-hostu: `README.md`.
@@ -390,8 +390,9 @@ rozszerzone o `'/'` — niezalogowani widzą landing zamiast redirectu na login.
 `pages/index.vue` ma `layout: false` i renderuje `<Landing />` dla anonima albo
 `<NuxtLayout name="default">` z pulpitem dla zalogowanego. `components/Landing.vue`:
 brandowy Map / Diagram spójny z aplikacją, pływający navbar, ręcznie rysowana mapa operacji SVG, moduły
-w formie spec-listy, 3 pakiety (placeholder: Starter 149 / Pro 249 / Sieć 399 zł/mc
-per lokal, „ceny wkrótce"), FAQ i statement footer. CTA prowadzą do publicznego demo lub
+w formie spec-listy, FAQ i statement footer. Pierwotny placeholder cenowy został zastąpiony
+ofertą wejściową: Early access 0 zł przez 3 miesiące dla pierwszych 20 firm, Lokal 79 zł/mc,
+Pro 149 zł/mc i kolejne oddziały po 99 zł/mc. CTA prowadzą do publicznego demo lub
 `/auth/register`. Rejestracja: podtytuł „Załóż konto i przetestuj OZMO w trybie demo".
 
 **2. Subskrypcje + bramka demo (M11).** Enum `plan` (demo|starter|pro|network), tabela
@@ -683,8 +684,8 @@ sygnatur RPC × 2 role) — pozostałe są celowe.
 
 **3. Open-source (AGPL + model hostowany).** `LICENSE` — pełny tekst GNU AGPL-3.0. `README.md` —
 przepisany (polski): czym jest OZMO, moduły, stack, self-host quick start, konto demo, licencja i
-model (self-host darmowy, hosted płatny). Landing: czwarta cicha karta cennika „Self-host — za darmo,
-na własnym serwerze (AGPL)" + link do repo GitHub; stopka z linkiem GitHub. Repo:
+model (self-host darmowy, hosted płatny). Landing wyjaśnia self-hosting obok cennika i prowadzi
+do repo GitHub; stopka zawiera link GitHub. Repo:
 `https://github.com/hkn-33/OZMO`.
 
 **Weryfikacja (lokalnie):** `supabase db reset` (21 migracji + seed) czysto; `db restart kong`;

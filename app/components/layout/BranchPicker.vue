@@ -4,15 +4,12 @@ import { Building2, ChevronsUpDown, Check } from '@lucide/vue'
 const { branches, activeBranch, activeBranchId, setActive, load } = useBranch()
 const { activeOrgId } = useOrg()
 
-// Wymuś klienckie przeładowanie, gdy SSR pierwszego żądania zwrócił pustą listę
-// (brak sesji w SSR → `loaded=true` z pustymi oddziałami blokowałby kolejne `load()`).
 onMounted(() => load(!branches.value.length))
-// Przeładuj listę oddziałów po zmianie organizacji.
 watch(activeOrgId, () => load(true))
 </script>
 
 <template>
-  <DropdownMenu v-if="branches.length">
+  <DropdownMenu v-if="branches.length > 1">
     <DropdownMenuTrigger as-child>
       <Button variant="outline" size="sm" class="max-w-[12rem] gap-2">
         <Building2 class="size-4 shrink-0" />
@@ -35,4 +32,11 @@ watch(activeOrgId, () => load(true))
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
+  <div
+    v-else-if="activeBranch"
+    class="inline-flex min-h-9 max-w-[12rem] items-center gap-2 px-1 text-sm font-medium text-muted-foreground"
+  >
+    <Building2 class="size-4 shrink-0" />
+    <span class="truncate">{{ activeBranch.name }}</span>
+  </div>
 </template>

@@ -5,9 +5,9 @@
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![AGPL-3.0](https://img.shields.io/badge/licencja-AGPL--3.0-blue)](./LICENSE)
 
-Open-source’owy system operacyjny dla wielooddziałowych firm z branży gastronomicznej,
-hotelarskiej i handlowej. Zastępuje arkusze, komunikatory i papierowe checklisty jednym
-miejscem do zarządzania codzienną pracą.
+Open-source’owy system codziennych operacji dla firm pracujących zmianowo — od jednego
+lokalu po wiele oddziałów. Zastępuje arkusze, komunikatory i papierowe checklisty jednym
+miejscem do zarządzania zadaniami, zespołem, magazynem i raportami.
 
 OZMO jest aplikacją wielodostępową: **organizacja → oddziały → członkowie**. Uprawnienia są
 egzekwowane w PostgreSQL przez RLS, nie tylko ukrywane w interfejsie.
@@ -19,7 +19,7 @@ egzekwowane w PostgreSQL przez RLS, nie tylko ukrywane w interfejsie.
 - czat organizacji i oddziałów z Realtime,
 - magazyn, ruchy towarowe, alerty stanów i inwentaryzacje,
 - raporty dnia pracownika i menadżera,
-- koszty, przychody i wskaźniki dla oddziału lub całej sieci,
+- koszty, przychody i wskaźniki dla jednego lub wielu oddziałów,
 - role organizacyjne i oddziałowe chronione przez deny-by-default RLS,
 - instalowalna, mobilna aplikacja PWA.
 

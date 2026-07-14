@@ -47,22 +47,22 @@ const daySteps = [
 
 const plans = [
   {
-    name: 'Starter',
-    price: '149 zł',
-    summary: 'Jeden lokal i codzienna praca zespołu.',
-    features: ['Zadania i checklisty', 'Czaty', 'Raporty dnia'],
+    name: 'Early access',
+    price: '0 zł',
+    summary: 'Pierwsze 20 firm przez pierwsze 3 miesiące.',
+    features: ['Pełna aplikacja', 'Pomoc we wdrożeniu', 'Wpływ na rozwój produktu'],
+  },
+  {
+    name: 'Lokal',
+    price: '79 zł',
+    summary: 'Codzienna praca jednego lokalu i zespołu do 15 osób.',
+    features: ['Zadania i checklisty', 'Grafik i czat', 'Magazyn i raport dnia'],
   },
   {
     name: 'Pro',
-    price: '249 zł',
-    summary: 'Grafik, magazyn i pełna kontrola lokalu.',
-    features: ['Wszystko ze Starter', 'Grafik', 'Magazyn', 'Raport kierownika'],
-  },
-  {
-    name: 'Sieć',
-    price: '399 zł',
-    summary: 'Wiele oddziałów widocznych jako jedna firma.',
-    features: ['Wszystko z Pro', 'Koszty i przychody', 'Widok całej sieci'],
+    price: '149 zł',
+    summary: 'Pełna kontrola firmy bez limitu członków zespołu.',
+    features: ['Wszystko z planu Lokal', 'Import danych i koszty', 'Kolejny lokal +99 zł / mc'],
   },
 ]
 
@@ -81,7 +81,7 @@ const faq = [
   },
   {
     q: 'Co z danymi i RODO?',
-    a: 'Dane są przechowywane na serwerach w Unii Europejskiej. Dostęp wynika z organizacji, oddziału i roli pracownika.',
+    a: 'Dostęp do danych zależy od organizacji, lokalu i roli użytkownika. Szczegóły opisuje polityka prywatności dostępna w stopce.',
   },
   {
     q: 'Czy mogę uruchomić OZMO na własnym serwerze?',
@@ -110,22 +110,22 @@ const faq = [
     <main>
       <section id="start" class="landing-hero">
         <div class="landing-shell landing-hero-copy">
-          <h1>Lokal działa.<br>Ty widzisz wszystko.</h1>
+          <h1>Codzienna praca firmy w jednym miejscu.</h1>
           <div class="landing-hero-lede">
             <p>
-              OZMO łączy ludzi, zadania, grafik, magazyn i raporty. Zespół wie, co robić.
-              Kierownik widzi zmianę. Właściciel widzi całą sieć.
+              Planuj grafik, przydzielaj zadania, prowadź magazyn i zamykaj dzień raportem.
+              OZMO działa dla jednego lokalu i dla wielu oddziałów.
             </p>
             <div class="landing-actions">
               <button class="landing-button landing-button-primary" :disabled="signingIn" @click="enterDemo">
-                {{ signingIn ? 'Otwieram demo…' : 'Zobacz działające demo' }}
+                {{ signingIn ? 'Otwieram demo…' : 'Otwórz demo' }}
                 <ArrowRight aria-hidden="true" />
               </button>
               <NuxtLink to="/auth/register" class="landing-button landing-button-secondary">
                 Załóż konto
               </NuxtLink>
             </div>
-            <p class="landing-note">Bez karty. Demo z gotowymi danymi.</p>
+            <p class="landing-note">Bez karty płatniczej. Konto demo ma przykładowe dane.</p>
           </div>
         </div>
 
@@ -136,10 +136,10 @@ const faq = [
 
       <section id="jak-dziala" class="landing-day">
         <div class="landing-shell landing-day-head">
-          <h2>Od otwarcia do raportu. Bez zmiany narzędzia.</h2>
+          <h2>Wszystko, co dzieje się w ciągu dnia.</h2>
           <p>
-            Każdy wpis trafia tam, gdzie powinien. Nie trzeba przepisywać informacji z czatu
-            do arkusza ani dzwonić do lokalu po aktualny stan.
+            Zadania, zmiany, dostawy i raporty są w jednym systemie. Nie trzeba przenosić
+            informacji z rozmów do arkusza.
           </p>
         </div>
 
@@ -147,7 +147,7 @@ const faq = [
           <div class="landing-day-status">
             <div>
               <span class="landing-live-dot" />
-              Poniedziałek · Bella Centrum
+              Poniedziałek · Punkt Centrum
             </div>
             <span>Na bieżąco</span>
           </div>
@@ -170,15 +170,15 @@ const faq = [
       <section class="landing-showcases landing-shell">
         <div class="landing-showcase landing-showcase-tasks">
           <div class="landing-showcase-copy">
-            <h2>Praca nie ginie w rozmowie.</h2>
+            <h2>Zadania i checklisty</h2>
             <p>
-              Zadanie ma właściciela, termin i checklistę. Komentarze zostają przy pracy,
-              której dotyczą — nie trzydzieści wiadomości wyżej.
+              Każde zadanie ma osobę odpowiedzialną, termin i listę kroków. Komentarze
+              zostają przy zadaniu, więc łatwo sprawdzić ustalenia.
             </p>
             <ul>
               <li><Check aria-hidden="true" /> Szablony otwarcia i zamknięcia</li>
               <li><Check aria-hidden="true" /> Postęp widoczny na żywo</li>
-              <li><Check aria-hidden="true" /> Powiadomienia bez szumu</li>
+              <li><Check aria-hidden="true" /> Powiadomienia o ważnych zmianach</li>
             </ul>
           </div>
           <div v-reveal class="landing-visual-reveal">
@@ -217,10 +217,10 @@ const faq = [
             </div>
           </div>
           <div class="landing-showcase-copy">
-            <h2>Grafik, który zespół naprawdę widzi.</h2>
+            <h2>Grafik pracy</h2>
             <p>
-              Kierownik układa tydzień, pracownik podaje dostępność, a publikacja trafia od razu
-              na telefon. Bez zdjęć arkusza wysyłanych na grupę.
+              Kierownik układa tydzień i publikuje zmiany. Pracownik podaje dostępność
+              i sprawdza aktualny grafik na telefonie.
             </p>
             <div class="landing-inline-modules">
               <span><CalendarDays /> Grafik</span>
@@ -232,10 +232,10 @@ const faq = [
 
         <div class="landing-showcase landing-showcase-stock">
           <div class="landing-showcase-copy">
-            <h2>Wiesz wcześniej, nie po fakcie.</h2>
+            <h2>Stany magazynowe bez arkusza</h2>
             <p>
-              Przyjęcia, wydania i inwentaryzacje składają się na jeden stan magazynu.
-              Raport kierownika domyka dzień i pokazuje koszty całej sieci.
+              Zapisuj dostawy, zużycie i straty. OZMO oblicza bieżący stan i tworzy listę
+              produktów, które trzeba uzupełnić.
             </p>
             <button class="landing-text-link" :disabled="signingIn" @click="enterDemo">
               Sprawdź magazyn w demo <ArrowRight aria-hidden="true" />
@@ -244,12 +244,12 @@ const faq = [
           <div v-reveal class="landing-visual-reveal">
             <div class="landing-stock-visual" role="img" aria-label="Podgląd stanów magazynowych i kosztów">
               <div class="landing-stock-top">
-                <div><Package /><span>Magazyn sieci</span></div>
-                <strong>2 oddziały</strong>
+                <div><Package /><span>Magazyn</span></div>
+                <strong>Lista braków</strong>
               </div>
-              <div class="landing-stock-row"><span>Kawa ziarnista</span><b>18,4 kg</b><em>dobry stan</em></div>
-              <div class="landing-stock-row is-low"><span>Mleko owsiane</span><b>6 szt.</b><em>niski stan</em></div>
-              <div class="landing-stock-row"><span>Syrop waniliowy</span><b>12 szt.</b><em>dobry stan</em></div>
+              <div class="landing-stock-row"><span>Materiały eksploatacyjne</span><b>18 szt.</b><em>dobry stan</em></div>
+              <div class="landing-stock-row is-low"><span>Środek czystości</span><b>2 szt.</b><em>niski stan</em></div>
+              <div class="landing-stock-row"><span>Opakowania</span><b>120 szt.</b><em>dobry stan</em></div>
               <div class="landing-cost-line">
                 <span><Wallet /> Koszt produktów</span>
                 <strong>24%</strong>
@@ -265,10 +265,10 @@ const faq = [
       <section class="landing-network">
         <div class="landing-shell landing-network-inner">
           <div>
-            <h2>Jeden lokal z bliska.<br>Cała sieć z dystansu.</h2>
+            <h2>Jeden lokal albo kilka oddziałów</h2>
             <p>
-              Ta sama informacja ma inny poziom szczegółu dla pracownika, kierownika i właściciela.
-              Bez osobnych raportów przygotowywanych dla każdego.
+              Przy jednym lokalu widzisz tylko potrzebne funkcje. Po dodaniu kolejnych
+              oddziałów pojawiają się wspólne raporty, koszty i stany magazynowe.
             </p>
           </div>
           <div v-reveal class="landing-network-graphic" role="img" aria-label="Dwa lokale połączone w jednej organizacji">
@@ -285,17 +285,17 @@ const faq = [
 
       <section id="cennik" class="landing-pricing landing-shell">
         <div class="landing-pricing-head">
-          <h2>Cennik, który da się zrozumieć.</h2>
+          <h2>Prosty cennik</h2>
           <div>
-            <p>Ceny wkrótce. Miesięcznie, bez długiej umowy.</p>
+            <p>Opłata miesięczna. Bez umowy na czas określony.</p>
             <a :href="GITHUB_URL" target="_blank" rel="noopener"><Code /> Zobacz kod na GitHub</a>
           </div>
         </div>
         <div v-reveal class="landing-price-stage">
           <aside class="landing-price-summary">
-            <p>Za oddział<br>miesięcznie</p>
-            <strong>149–399 zł</strong>
-            <span>Bez długiej umowy.</span>
+            <p>Za firmę<br>miesięcznie</p>
+            <strong>0–149 zł</strong>
+            <span>Pierwsze 3 miesiące mogą kosztować 0 zł.</span>
             <div>
               <Code aria-hidden="true" />
               <p>Self-hosted pozostaje bez opłat za usługę OZMO.</p>
@@ -322,8 +322,8 @@ const faq = [
 
       <section class="landing-faq landing-shell">
         <div>
-          <h2>Zanim wejdziesz do demo.</h2>
-          <p>Najczęstsze konkretne pytania, bez drobnego druku.</p>
+          <h2>Pytania i odpowiedzi</h2>
+          <p>Najważniejsze informacje przed założeniem konta.</p>
         </div>
         <Accordion type="single" collapsible class="landing-accordion">
           <AccordionItem v-for="(item, index) in faq" :key="item.q" :value="`faq-${index}`">
@@ -335,9 +335,9 @@ const faq = [
 
       <section class="landing-final">
         <div class="landing-shell landing-final-inner">
-          <p>Zobacz poniedziałek w OZMO.<br>Nie prezentację o OZMO.</p>
+          <p>Sprawdź, czy OZMO pasuje do Twojej firmy.</p>
           <button class="landing-button landing-button-light" :disabled="signingIn" @click="enterDemo">
-            {{ signingIn ? 'Otwieram…' : 'Otwórz działające demo' }}
+            {{ signingIn ? 'Otwieram…' : 'Otwórz demo' }}
             <ArrowRight aria-hidden="true" />
           </button>
         </div>
@@ -346,9 +346,11 @@ const faq = [
 
     <footer class="landing-footer landing-shell">
       <span class="landing-wordmark">ozmo<span>.</span></span>
-      <p>System operacyjny dla sieci lokali.</p>
+      <p>Codzienne operacje jednego lub wielu lokali.</p>
       <div>
         <NuxtLink to="/auth/login">Zaloguj się</NuxtLink>
+        <NuxtLink to="/privacy">Polityka prywatności</NuxtLink>
+        <NuxtLink to="/terms">Warunki korzystania</NuxtLink>
         <a :href="GITHUB_URL" target="_blank" rel="noopener">GitHub</a>
         <span>© {{ new Date().getFullYear() }} · AGPL-3.0</span>
       </div>
@@ -455,21 +457,22 @@ const faq = [
 }
 
 .landing-hero {
-  padding-top: 9rem;
-  padding-bottom: var(--space-3xl, 6rem);
+  padding-top: 7.5rem;
+  padding-bottom: var(--space-2xl);
 }
 
 .landing-hero-copy {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, .65fr);
-  gap: clamp(2rem, 7vw, 7rem);
+  grid-template-columns: minmax(0, 1.1fr) minmax(20rem, .9fr);
+  gap: clamp(2rem, 5vw, 5rem);
   align-items: end;
 }
 
 .landing-hero h1 {
   min-width: 0;
   font-family: var(--font-display);
-  font-size: clamp(3.7rem, 7.3vw, 6rem);
+  max-width: 13ch;
+  font-size: clamp(3.2rem, 6vw, 5rem);
   font-weight: 750;
   line-height: .92;
   letter-spacing: -0.04em;
@@ -524,7 +527,8 @@ const faq = [
 }
 
 .landing-map-wrap {
-  margin-top: var(--space-sm);
+  max-width: 54rem;
+  margin-top: var(--space-lg);
 }
 
 .landing-day {
@@ -1327,15 +1331,17 @@ const faq = [
   }
 
   .landing-hero {
-    padding-top: 7.5rem;
+    padding-top: 6.5rem;
+    padding-bottom: var(--space-xl);
   }
 
   .landing-hero h1 {
-    font-size: clamp(3.2rem, 15vw, 4.2rem);
+    max-width: 11ch;
+    font-size: clamp(2.75rem, 13vw, 3.6rem);
   }
 
   .landing-map-wrap {
-    margin-top: var(--space-xl);
+    margin-top: var(--space-lg);
   }
 
   .landing-hero-lede > p:first-child,

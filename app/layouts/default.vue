@@ -15,6 +15,8 @@ import {
   Check,
   Settings,
   Search,
+  ShieldCheck,
+  Scale,
   X,
 } from '@lucide/vue'
 
@@ -139,6 +141,14 @@ async function logout() {
               <Settings class="mr-2 size-4" />
               Ustawienia
             </DropdownMenuItem>
+            <DropdownMenuItem @select="() => navigateTo('/privacy')">
+              <ShieldCheck class="mr-2 size-4" />
+              Polityka prywatności
+            </DropdownMenuItem>
+            <DropdownMenuItem @select="() => navigateTo('/terms')">
+              <Scale class="mr-2 size-4" />
+              Warunki korzystania
+            </DropdownMenuItem>
             <DropdownMenuItem @select="logout">
               <LogOut class="mr-2 size-4" />
               Wyloguj się
@@ -223,6 +233,22 @@ async function logout() {
               >
                 <Settings class="size-4" />
                 Ustawienia
+              </NuxtLink>
+              <NuxtLink
+                to="/privacy"
+                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                @click="sheetOpen = false"
+              >
+                <ShieldCheck class="size-4" />
+                Polityka prywatności
+              </NuxtLink>
+              <NuxtLink
+                to="/terms"
+                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
+                @click="sheetOpen = false"
+              >
+                <Scale class="size-4" />
+                Warunki korzystania
               </NuxtLink>
               <button
                 class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"

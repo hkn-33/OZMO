@@ -3,7 +3,7 @@ import {
   CalendarClock,
   ListChecks,
   FileText,
-  Network,
+  ClipboardCheck,
   ChevronRight,
   ArrowUpRight,
   Clock3,
@@ -19,7 +19,7 @@ definePageMeta({ layout: false })
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
-const { activeOrgId, activeOrg, role, isAdmin, load } = useOrg()
+const { activeOrgId, activeOrg, role, load } = useOrg()
 await load()
 
 // Po twardym wejściu na stronę `user.value` bywa *claims* JWT (`.sub`, bez `.id`).
@@ -34,7 +34,7 @@ const roleLabels: Record<string, string> = {
 type MyTask = { id: string; title: string; status: string; due_at: string | null; priority: string }
 type StockAlert = { name: string; branch: string; qty: number; min: number }
 type DayNoteLite = { id: string; body: string; severity: string; branch: string }
-type NetworkStats = { branches: number; openTasks: number; closedReports: number }
+type DayStats = { branches: number; openTasks: number; closedReports: number; missingReports: number }
 
 const priorityVariant: Record<string, string> = {
   low: 'outline',
@@ -76,7 +76,6 @@ const { data: dash } = await useAsyncData(
 
     const branchName = new Map((branchesRes.data ?? []).map((b) => [b.id, b.name]))
 
-    // My open tasks — sort due soonest first, nulls last.
     const myTasks: MyTask[] = ((assignRes.data ?? []) as unknown as { tasks: MyTask }[])
       .map((r) => r.tasks)
       .filter(Boolean)
@@ -88,7 +87,6 @@ const { data: dash } = await useAsyncData(
       })
       .slice(0, 5)
 
-    // Stock alerts — level below minimum.
     const levelMap = new Map(
       (levelsRes.data ?? []).map((l) => [`${l.branch_id}:${l.product_id}`, Number(l.qty)]),
     )
@@ -114,36 +112,36 @@ const { data: dash } = await useAsyncData(
       branch: branchName.get(n.branch_id) ?? '',
     }))
 
-    // Network stats for admins/owners.
-    let network: NetworkStats | null = null
-    if (isAdmin.value) {
-      const [openTasksRes, closedRepRes] = await Promise.all([
-        supabase
-          .from('tasks')
-          .select('id', { count: 'exact', head: true })
-          .eq('org_id', org)
-          .neq('status', 'done'),
-        supabase
-          .from('manager_reports')
-          .select('branch_id', { count: 'exact', head: true })
-          .eq('org_id', org)
-          .eq('date', today)
-          .eq('status', 'closed'),
-      ])
-      network = {
-        branches: branchesRes.data?.length ?? 0,
-        openTasks: openTasksRes.count ?? 0,
-        closedReports: closedRepRes.count ?? 0,
-      }
+    const [openTasksRes, closedRepRes] = await Promise.all([
+      supabase
+        .from('tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('org_id', org)
+        .neq('status', 'done'),
+      supabase
+        .from('manager_reports')
+        .select('branch_id', { count: 'exact', head: true })
+        .eq('org_id', org)
+        .eq('date', today)
+        .eq('status', 'closed'),
+    ])
+    const branchCount = branchesRes.data?.length ?? 0
+    const closedReports = closedRepRes.count ?? 0
+    const day: DayStats = {
+      branches: branchCount,
+      openTasks: openTasksRes.count ?? 0,
+      closedReports,
+      missingReports: Math.max(0, branchCount - closedReports),
     }
+    const issueCount = notes.filter((note) => note.severity === 'issue').length
 
     return {
       myTasks,
       alerts: alerts.slice(0, 5),
       alertCount: alerts.length,
       notes,
-      network,
-      branchCount: branchesRes.data?.length ?? 0,
+      day,
+      attentionCount: alerts.length + issueCount + day.missingReports,
     }
   },
   { watch: [activeOrgId, user] },
@@ -228,14 +226,14 @@ const todayLabel = new Intl.DateTimeFormat('pl-PL', {
         <div class="col-span-2 rounded-[var(--radius-card)] bg-[var(--color-panel-pink)] p-5 text-[var(--color-panel-ink)] md:col-span-3 xl:col-span-5">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-sm font-semibold">Otwarte zadania (sieć)</p>
-              <p class="mt-5 text-4xl font-bold tabular-nums">{{ dash?.network?.openTasks ?? dash?.myTasks.length ?? 0 }}</p>
+              <p class="text-sm font-semibold">Wymaga uwagi</p>
+              <p class="mt-5 text-4xl font-bold tabular-nums">{{ dash?.attentionCount ?? 0 }}</p>
             </div>
             <ListChecks class="size-5" />
           </div>
           <div class="mt-7 flex flex-wrap gap-x-6 gap-y-2 border-t border-[var(--color-panel-rule)] pt-3 text-sm">
-            <span v-if="dash?.network"><strong class="tabular-nums">{{ dash.network.closedReports }}/{{ dash.network.branches }}</strong> raportów zamkniętych</span>
-            <span><strong class="tabular-nums">{{ dash?.alertCount ?? 0 }}</strong> alertów magazynowych</span>
+            <span><strong class="tabular-nums">{{ dash?.day.openTasks ?? dash?.myTasks.length ?? 0 }}</strong> otwartych zadań</span>
+            <span><strong class="tabular-nums">{{ dash?.alertCount ?? 0 }}</strong> braków magazynowych</span>
           </div>
         </div>
 
@@ -254,14 +252,17 @@ const todayLabel = new Intl.DateTimeFormat('pl-PL', {
         </NuxtLink>
 
         <NuxtLink
-          to="/branches"
+          to="/reports"
           class="flex min-h-36 flex-col justify-between rounded-[var(--radius-card)] bg-[var(--color-panel-blue)] p-4 text-[var(--color-panel-ink)] transition-transform duration-150 active:translate-y-px md:col-span-2 md:p-5 xl:col-span-3"
         >
           <div class="flex items-start justify-between gap-4">
-            <p class="text-sm font-semibold">Oddziały</p>
-            <Network class="size-5" />
+            <p class="text-sm font-semibold">{{ (dash?.day.branches ?? 0) > 1 ? 'Raporty dnia' : 'Raport dnia' }}</p>
+            <ClipboardCheck class="size-5" />
           </div>
-          <p class="text-4xl font-bold tabular-nums">{{ dash?.network?.branches ?? dash?.branchCount ?? 0 }}</p>
+          <div>
+            <p class="text-4xl font-bold tabular-nums">{{ dash?.day.closedReports ?? 0 }}/{{ dash?.day.branches ?? 0 }}</p>
+            <p class="mt-1 text-sm opacity-70">zamknięte</p>
+          </div>
         </NuxtLink>
       </section>
 
@@ -308,7 +309,7 @@ const todayLabel = new Intl.DateTimeFormat('pl-PL', {
         <aside class="min-w-0" aria-labelledby="today-heading">
           <div class="flex items-end justify-between gap-3 border-b pb-4">
             <div>
-              <h2 id="today-heading" class="text-lg font-semibold">Dzisiaj</h2>
+              <h2 id="today-heading" class="text-lg font-semibold">Do decyzji</h2>
               <p class="text-sm capitalize text-muted-foreground">{{ todayLabel }}</p>
             </div>
             <span class="rounded-full bg-[var(--color-panel-ink)] px-3 py-1 text-xs font-medium text-[var(--color-on-ink)]">Na żywo</span>
@@ -318,7 +319,7 @@ const todayLabel = new Intl.DateTimeFormat('pl-PL', {
             <section>
               <div class="absolute -left-[7px] mt-1 size-3 rounded-full border-2 border-background bg-[var(--color-accent)]" />
               <div class="flex items-center justify-between gap-3">
-                <h3 class="text-sm font-semibold">Alerty magazynowe</h3>
+                <h3 class="text-sm font-semibold">Braki magazynowe</h3>
                 <Badge v-if="dash?.alertCount" variant="danger">{{ dash.alertCount }}</Badge>
               </div>
               <p v-if="!dash?.alerts.length" class="mt-2 text-sm text-muted-foreground">Stany są powyżej minimum.</p>
@@ -335,7 +336,7 @@ const todayLabel = new Intl.DateTimeFormat('pl-PL', {
             <section>
               <div class="absolute -left-[7px] mt-1 size-3 rounded-full border-2 border-background bg-info" />
               <div class="flex items-center justify-between gap-3">
-                <h3 class="text-sm font-semibold">Nieprzeczytane czaty</h3>
+                <h3 class="text-sm font-semibold">Nowe wiadomości</h3>
                 <Badge v-if="chat.totalUnread.value" variant="info">{{ chat.totalUnread.value }}</Badge>
               </div>
               <p v-if="!unreadChannels.length" class="mt-2 text-sm text-muted-foreground">Brak nowych wiadomości.</p>
@@ -351,7 +352,7 @@ const todayLabel = new Intl.DateTimeFormat('pl-PL', {
             <section>
               <div class="absolute -left-[7px] mt-1 size-3 rounded-full border-2 border-background bg-warning" />
               <div class="flex items-center justify-between gap-3">
-                <h3 class="text-sm font-semibold">Notatki dnia</h3>
+                <h3 class="text-sm font-semibold">Raport i zdarzenia</h3>
                 <NuxtLink to="/reports" class="min-h-11 whitespace-nowrap text-sm text-muted-foreground hover:text-foreground">Raporty</NuxtLink>
               </div>
               <p v-if="!dash?.notes.length" class="mt-2 text-sm text-muted-foreground">Brak notatek na dziś.</p>

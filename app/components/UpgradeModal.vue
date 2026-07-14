@@ -22,7 +22,7 @@ const { upgradeOpen } = useDemoGuard()
       </p>
       <DialogFooter class="gap-2 sm:justify-between">
         <Button variant="outline" @click="upgradeOpen = false">Może później</Button>
-        <NuxtLink to="/#pricing" @click="upgradeOpen = false">
+          <NuxtLink to="/#cennik" @click="upgradeOpen = false">
           <Button>Zobacz pakiety</Button>
         </NuxtLink>
       </DialogFooter>
